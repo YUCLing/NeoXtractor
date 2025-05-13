@@ -3,7 +3,6 @@ import io
 import struct
 import math
 from PIL import Image
-import astc_decomp_faster
 from bitstring import ConstBitStream
 
 #tga, ico, tiff, dds

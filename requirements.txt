@@ -11,4 +11,3 @@ arc4
 Pillow
 bitstring
 PyQt5-Frameless-Window
-astc-decomp-faster
