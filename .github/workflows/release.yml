@@ -52,7 +52,7 @@ jobs:
           pyinstaller --onefile main.py --name "${{ matrix.asset_name }}-${{ steps.get_version.outputs.VERSION }}"
         
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}-${{ steps.get_version.outputs.VERSION }}
           path: dist/${{ matrix.asset_name }}-${{ steps.get_version.outputs.VERSION }}${{ runner.os == 'Windows' && '.exe' || '' }}
