@@ -27,15 +27,18 @@ jobs:
             platform=$(basename "$platform_path")
             echo "Processing platform: $platform"
             
-            cd "$platform_path"
+            # For Windows, copy the artifact-zipped file directly with .zip extension
             if [[ "$platform" == *"windows"* ]]; then
-              echo "Creating zip archive for $platform"
-              7z a "../../releases/$platform.zip" *
+              echo "Using existing zip archive for $platform"
+              # Download the zip artifact that GitHub Actions created
+              mv "$platform_path.zip" "releases/$platform.zip" 2>/dev/null || echo "No zip found for $platform"
             else
+              # For non-Windows, create tar.gz archive of the contents
               echo "Creating tar.gz archive for $platform"
+              cd "$platform_path"
               tar -czf "../../releases/$platform.tar.gz" *
+              cd ../../
             fi
-            cd ../../
           done
           
           echo "Created archives:"
