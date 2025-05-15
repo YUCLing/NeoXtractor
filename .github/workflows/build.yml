@@ -57,12 +57,12 @@ jobs:
       - name: Create distribution archive
         shell: bash
         run: |
-          cd dist
           ASSET_NAME="${{ matrix.asset_name }}${{ inputs.asset_suffix }}"
+          cd dist/main
           if [ "${{ runner.os }}" == "Windows" ]; then
-            7z a "$ASSET_NAME.zip" main
+            7z a "../$ASSET_NAME.zip" *
           else
-            tar -czvf "$ASSET_NAME.tar.gz" main
+            tar -czf "../$ASSET_NAME.tar.gz" .
           fi
       
       - name: Upload artifact
