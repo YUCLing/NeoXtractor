@@ -52,7 +52,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller main.spec
+          uv run pyinstaller main.spec
         
       - name: Upload artifact
         uses: actions/upload-artifact@v4
