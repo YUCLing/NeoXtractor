@@ -1,0 +1,30 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    
+  upload-to-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/neoxtractor-linux/*.tar.gz
+            artifacts/neoxtractor-windows/*.zip
+            artifacts/neoxtractor-windows-x86/*.zip
+            artifacts/neoxtractor-macos-x64/*.tar.gz
+            artifacts/neoxtractor-macos-arm64/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

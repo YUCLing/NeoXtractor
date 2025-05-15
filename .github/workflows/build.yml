@@ -1,0 +1,71 @@
+name: Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      asset_suffix:
+        description: 'Suffix to append to asset names'
+        required: false
+        default: ''
+        type: string
+    
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            asset_name: neoxtractor-linux
+          - os: windows-latest
+            arch: x64
+            asset_name: neoxtractor-windows
+          - os: windows-latest
+            arch: x86
+            asset_name: neoxtractor-windows-x86
+          - os: macos-latest
+            arch: x64
+            asset_name: neoxtractor-macos-x64
+          - os: macos-latest
+            arch: arm64
+            asset_name: neoxtractor-macos-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
+          
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv pip install pyinstaller
+          uv sync
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller main.spec
+        
+      - name: Create distribution archive
+        shell: bash
+        run: |
+          cd dist
+          ASSET_NAME="${{ matrix.asset_name }}${{ inputs.asset_suffix }}"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            7z a "$ASSET_NAME.zip" main
+          else
+            tar -czvf "$ASSET_NAME.tar.gz" main
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}${{ inputs.asset_suffix }}
+          path: dist/${{ matrix.asset_name }}${{ inputs.asset_suffix }}${{ runner.os == 'Windows' && '.zip' || '.tar.gz' }}

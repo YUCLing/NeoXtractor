@@ -1,0 +1,13 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ rewrite-qt6-gh-actions-test ]
+  pull_request:
+    branches: [ rewrite-qt6-gh-actions-test ]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      asset_suffix: '-edge'
