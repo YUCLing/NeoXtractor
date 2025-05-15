@@ -17,14 +17,34 @@ jobs:
         with:
           path: artifacts
           
+      - name: Prepare artifacts for release
+        shell: bash
+        run: |
+          mkdir -p releases
+          
+          # Find all platform directories in artifacts folder
+          find artifacts -mindepth 1 -maxdepth 1 -type d | while read platform_path; do
+            platform=$(basename "$platform_path")
+            echo "Processing platform: $platform"
+            
+            cd "$platform_path"
+            if [[ "$platform" == *"windows"* ]]; then
+              echo "Creating zip archive for $platform"
+              7z a "../../releases/$platform.zip" *
+            else
+              echo "Creating tar.gz archive for $platform"
+              tar -czf "../../releases/$platform.tar.gz" *
+            fi
+            cd ../../
+          done
+          
+          echo "Created archives:"
+          ls -la releases/
+          
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/neoxtractor-linux/*.tar.gz
-            artifacts/neoxtractor-windows/*.zip
-            artifacts/neoxtractor-windows-x86/*.zip
-            artifacts/neoxtractor-macos-x64/*.tar.gz
-            artifacts/neoxtractor-macos-arm64/*.tar.gz
+          files: releases/*
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

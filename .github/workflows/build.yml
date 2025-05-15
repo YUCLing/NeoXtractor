@@ -54,19 +54,9 @@ jobs:
         run: |
           pyinstaller main.spec
         
-      - name: Create distribution archive
-        shell: bash
-        run: |
-          ASSET_NAME="${{ matrix.asset_name }}${{ inputs.asset_suffix }}"
-          cd dist/main
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            7z a "../$ASSET_NAME.zip" *
-          else
-            tar -czf "../$ASSET_NAME.tar.gz" .
-          fi
-      
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}${{ inputs.asset_suffix }}
-          path: dist/${{ matrix.asset_name }}${{ inputs.asset_suffix }}${{ runner.os == 'Windows' && '.zip' || '.tar.gz' }}
+          path: dist/main/
+          compression-level: 9
