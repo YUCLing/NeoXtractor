@@ -2,7 +2,7 @@ name: Code Linting
 
 on:
   push:
-    branches: [ rewrite-qt6 ]
+    branches: [ rewrite-qt6-gh-actions-test ]
   pull_request:
     branches: [ rewrite-qt6 ]
 
