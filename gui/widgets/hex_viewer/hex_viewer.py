@@ -1,3 +1,5 @@
+"""Provides HexViewer widget."""
+
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from .hex_area import HexArea
