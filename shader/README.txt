@@ -1,0 +1,1 @@
+Migrate all shaders here to `/shaders`, requires manual adaption.
