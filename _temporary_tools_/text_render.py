@@ -189,7 +189,7 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
             # Create uniform buffer for projection matrix and text color
             self._ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Dynamic,
                                         QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
-                                        80)  # Matrix (64 bytes) + color (16 bytes with padding)
+                                        64)  # Matrix (64 bytes)
             self._ubuf.create()
 
             sampler = self._rhi.newSampler(QtGui.QRhiSampler.Filter.Nearest,
@@ -229,13 +229,15 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
             # Set up vertex input layout
             input_layout = QtGui.QRhiVertexInputLayout()
             input_layout.setBindings([
-                QtGui.QRhiVertexInputBinding(4 * ctypes.sizeof(ctypes.c_float))
-                # 4 floats per vertex (pos.xy + tex.uv)
+                QtGui.QRhiVertexInputBinding(8 * ctypes.sizeof(ctypes.c_float))
+                # 8 floats per vertex (pos.xy + tex.uv + color.rgba)
             ])
             input_layout.setAttributes([
                 QtGui.QRhiVertexInputAttribute(0, 0, QtGui.QRhiVertexInputAttribute.Format.Float2, 0),
                 QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Format.Float2,
                                                2 * ctypes.sizeof(ctypes.c_float)),
+                QtGui.QRhiVertexInputAttribute(0, 2, QtGui.QRhiVertexInputAttribute.Format.Float4,
+                                               4 * ctypes.sizeof(ctypes.c_float))
             ])
 
             self._pipeline.setVertexInputLayout(input_layout)
@@ -245,11 +247,11 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
             # Set up blending for text rendering
             target_blend = QtGui.QRhiGraphicsPipeline.TargetBlend()
             # TargetBlend is not currently typed
-            target_blend.enable = True
-            target_blend.srcColor = QtGui.QRhiGraphicsPipeline.BlendFactor.SrcAlpha
-            target_blend.dstColor = QtGui.QRhiGraphicsPipeline.BlendFactor.OneMinusSrcAlpha
-            target_blend.srcAlpha = QtGui.QRhiGraphicsPipeline.BlendFactor.One
-            target_blend.dstAlpha = QtGui.QRhiGraphicsPipeline.BlendFactor.OneMinusSrcAlpha
+            target_blend.enable = True # type: ignore
+            target_blend.srcColor = QtGui.QRhiGraphicsPipeline.BlendFactor.SrcAlpha # type: ignore
+            target_blend.dstColor = QtGui.QRhiGraphicsPipeline.BlendFactor.OneMinusSrcAlpha # type: ignore
+            target_blend.srcAlpha = QtGui.QRhiGraphicsPipeline.BlendFactor.One # type: ignore
+            target_blend.dstAlpha = QtGui.QRhiGraphicsPipeline.BlendFactor.OneMinusSrcAlpha # type: ignore
 
             self._pipeline.setTargetBlends([target_blend])
 
@@ -269,6 +271,16 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
         # Convert matrix and color to array
         matrix_data = projection.data()
 
+        uniform_array = (ctypes.c_float * len(matrix_data))(*matrix_data)
+
+        resource_updates = self._rhi.nextResourceUpdateBatch()
+        resource_updates.updateDynamicBuffer(self._ubuf, 0, ctypes.sizeof(uniform_array),
+                                           cast(int, uniform_array))
+
+        scale = 1
+        x, y = 10, self.renderTarget().pixelSize().height() - 32
+        text = "Hello World! Current time: " + QtCore.QDateTime.currentDateTime().toString("hh:mm:ss")
+
         self._clr_r += (0.012 + 0.02) * random.random() * self._clr_g_dir
         if self._clr_r > 1.0 or self._clr_r < 0.0:
             self._clr_r_dir *= -1
@@ -282,17 +294,6 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
             self._clr_b_dir *= -1
         self._clr_b = max(0.0, min(1.0, self._clr_b))
         color_data = [self._clr_r, self._clr_g, self._clr_b, 1.0]
-
-        uniform_data = list(matrix_data) + color_data
-        uniform_array = (ctypes.c_float * len(uniform_data))(*uniform_data)
-
-        resource_updates = self._rhi.nextResourceUpdateBatch()
-        resource_updates.updateDynamicBuffer(self._ubuf, 0, ctypes.sizeof(uniform_array),
-                                           cast(int, uniform_array))
-
-        scale = 1
-        x, y = 10, self.renderTarget().pixelSize().height() - 32
-        text = "Hello World! Current time: " + QtCore.QDateTime.currentDateTime().toString("hh:mm:ss")
 
         # Generate vertices for text
         vertices = []
@@ -315,14 +316,17 @@ class TextRenderWidget(QtWidgets.QRhiWidget):
             # Add quad vertices (position + texcoord for each vertex)
             quad = [
                 # Bottom-left
-                cursor_x, char_y + h, tex_coords[0], tex_coords[1],
+                cursor_x, char_y + h, tex_coords[0], tex_coords[1]
+            ] + color_data + [
                 # Top-left
-                cursor_x, char_y, tex_coords[0], tex_coords[3],
+                cursor_x, char_y, tex_coords[0], tex_coords[3]
+            ] + color_data + [
                 # Top-right
-                cursor_x + w, char_y, tex_coords[2], tex_coords[3],
+                cursor_x + w, char_y, tex_coords[2], tex_coords[3]
+            ] + color_data + [
                 # Bottom-right
                 cursor_x + w, char_y + h, tex_coords[2], tex_coords[1]
-            ]
+            ] + color_data
             vertices.extend(quad)
             cursor_x += w
             char_count += 1
