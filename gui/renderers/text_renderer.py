@@ -320,7 +320,7 @@ class TextRenderer:
 
         cb.resourceUpdate(resource_updates)
 
-    def preparePass(self, cb: QtGui.QRhiCommandBuffer):
+    def update_resources(self, cb: QtGui.QRhiCommandBuffer):
         """
         Prepare a rendering pass by updating GPU resources with text geometry and uniforms.
         This method processes the queued text elements and prepares the necessary GPU buffers
@@ -449,7 +449,7 @@ class TextRenderer:
 
         self._char_count = 0
 
-    def renderText(self, text: str, position: tuple[int, int],
+    def render_text(self, text: str, position: tuple[int, int],
                      color: tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0),
                      scale: float = 1.0):
         """

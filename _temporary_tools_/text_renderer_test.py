@@ -9,7 +9,7 @@ from PySide6 import QtGui, QtWidgets
 
 import _use_application_modules # pylint: disable=unused-import
 
-from gui.text_renderer import TextRenderer
+from gui.renderers.text_renderer import TextRenderer
 
 PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -117,22 +117,22 @@ class ColorTriangleWidget(QtWidgets.QRhiWidget):
         if self._rhi is None or self._view_proj is None or self._ubuf is None or self._pipeline is None:
             return
 
-        self._text_renderer.renderText("Hello World!", (10, 10))
-        self._text_renderer.renderText("This is a colorful triangle!", (10, 10 + self._text_renderer.font_height))
-        self._text_renderer.renderText("I",
+        self._text_renderer.render_text("Hello World!", (10, 10))
+        self._text_renderer.render_text("This is a colorful triangle!", (10, 10 + self._text_renderer.font_height))
+        self._text_renderer.render_text("I",
                                        (10, 10 + 2 * self._text_renderer.font_height),
                                        (1.0, 0.0, 0.0, 1.0))
-        self._text_renderer.renderText("am",
+        self._text_renderer.render_text("am",
                                        (10 + 12, 10 + 2 * self._text_renderer.font_height),
                                        (0.0, 1.0, 0.0, 1.0))
-        self._text_renderer.renderText("colorful",
+        self._text_renderer.render_text("colorful",
                                        (10 + 12 + 40, 10 + 2 * self._text_renderer.font_height),
                                        (0.0, 0.0, 1.0, 1.0))
-        self._text_renderer.renderText("and can be transparent too",
+        self._text_renderer.render_text("and can be transparent too",
                                        (10, 10 + 3 * self._text_renderer.font_height),
                                        (1.0, 1.0, 1.0, 0.5))
 
-        self._text_renderer.preparePass(cb)
+        self._text_renderer.update_resources(cb)
 
         resource_updates = self._rhi.nextResourceUpdateBatch()
         self._view_proj.rotate(1.5, 0, 1, 0)
