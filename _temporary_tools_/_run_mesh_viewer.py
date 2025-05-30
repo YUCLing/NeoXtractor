@@ -11,8 +11,25 @@ if __name__ == "__main__":
 
     layout = QtWidgets.QVBoxLayout(wnd)
 
+    open_button = QtWidgets.QPushButton("Open Mesh File")
+    layout.addWidget(open_button)
+
+    def open_mesh_file():
+        file_dialog = QtWidgets.QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(
+            wnd, 
+            "Open Mesh File", 
+            "", 
+            "Mesh Files (*.mesh)"
+        )
+        if file_path:
+            with open(file_path, "rb") as f:
+                viewer.load_mesh(f.read())
+
+    open_button.clicked.connect(open_mesh_file)
+
     viewer = MeshViewer()
-    viewer.setApi(QtWidgets.QRhiWidget.Api.OpenGL)
+    viewer.setApi(QtWidgets.QRhiWidget.Api.Vulkan)
 
     layout.addWidget(viewer)
 

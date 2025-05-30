@@ -4,10 +4,11 @@ Base parser class and specific mesh parser implementations.
 
 import io
 import struct
-import numpy as np
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, Any, BinaryIO, Optional, List, Tuple
+
+import numpy as np
 
 from core.binary_readers import read_uint32, read_uint16, read_uint8, read_float
 from .exceptions import MeshParsingError
@@ -32,6 +33,7 @@ class MeshData:
     bone_parent: List[int] = field(default_factory=list)
     bone_name: List[str] = field(default_factory=list)
     bone_matrix: List[np.ndarray] = field(default_factory=list)
+    bone_count: int = 0
     
     # Vertex bone assignments
     vertex_bone: List[List[int]] = field(default_factory=list)
@@ -39,6 +41,7 @@ class MeshData:
     
     # Mesh metadata
     mesh: List[Tuple[int, int, int, int]] = field(default_factory=list)
+    mesh_version: int = 0
     
     # Additional optional data
     material_id: List[int] = field(default_factory=list)
@@ -141,6 +144,7 @@ class BaseMeshParser(ABC):
             bone_parent=model.get('bone_parent', []),
             bone_name=model.get('bone_name', []),
             bone_matrix=model.get('bone_original_matrix', model.get('bone_matrix', [])),
+            bone_count=model.get('bone_count', 0),
             
             # Vertex bone assignments - unify different field names
             vertex_bone=model.get('vertex_joint', model.get('vertex_bone', [])),
@@ -148,6 +152,7 @@ class BaseMeshParser(ABC):
             
             # Mesh metadata
             mesh=model.get('mesh', []),
+            mesh_version=model.get('mesh_version', 0),
             
             # Additional fields if present
             material_id=model.get('material_id', []),
@@ -200,6 +205,15 @@ class StandardMeshParser(BaseMeshParser):
     def _parse_mesh_original(self, model: Dict[str, Any], f: BinaryIO) -> Dict[str, Any]:
         """Internal standard parsing implementation."""
         _magic_number = f.read(8)
+
+        # Read mesh version
+        current_pos = f.tell()
+        f.seek(4)
+        model['mesh_version'] = read_uint8(f)
+
+        f.seek(12)
+        model['bone_count'] = read_uint8(f)
+        f.seek(current_pos)  # Reset to position after magic number
 
         model['bone_exist'] = read_uint32(f)
         model['mesh'] = []
@@ -341,6 +355,16 @@ class SimplifiedMeshParser(BaseMeshParser):
         model = {}
         with io.BytesIO(path) as f:
             _magic_number = f.read(8)
+
+            # Read mesh version
+            current_pos = f.tell()
+            f.seek(4)
+            model['mesh_version'] = read_uint8(f)
+
+            f.seek(12)
+            model['bone_count'] = read_uint8(f)
+            f.seek(current_pos)  # Reset to position after magic number
+
             model['bone_exist'] = read_uint32(f)
             model['mesh'] = []
 
@@ -479,6 +503,16 @@ class RobustMeshParser(BaseMeshParser):
     def _parser_mesh_bytes(self, model: Dict[str, Any], f: BinaryIO) -> Dict[str, Any]:
         """Internal robust parsing implementation."""
         _magic_number = f.read(8)
+
+        # Read mesh version
+        current_pos = f.tell()
+        f.seek(4)
+        model['mesh_version'] = read_uint8(f)
+
+        f.seek(12)
+        model['bone_count'] = read_uint8(f)
+        f.seek(current_pos)  # Reset to position after magic number
+
         model['bone_exist'] = read_uint32(f)
         model['mesh'] = []
 
@@ -633,6 +667,16 @@ class AdaptiveMeshParser(BaseMeshParser):
     def _parse_mesh_dynamic(self, model: Dict[str, Any], f: BinaryIO) -> Dict[str, Any]:
         """Parses a .mesh file, dynamically finding the correct mesh offset."""
         _magic_number = f.read(8)
+
+        # Read mesh version
+        current_pos = f.tell()
+        f.seek(4)
+        model['mesh_version'] = read_uint8(f)
+
+        f.seek(12)
+        model['bone_count'] = read_uint8(f)
+        f.seek(current_pos)  # Reset to position after magic number
+
         model['bone_exist'] = read_uint32(f)
         model['mesh'] = []
 
