@@ -7,7 +7,7 @@ import numpy as np
 
 from core.images import convert_image, image_to_png_data
 
-QT_SUPPORTED_FORMATS = tuple(fmt.toStdString() for fmt in QtGui.QImageReader.supportedImageFormats())
+QT_SUPPORTED_FORMATS = list(fmt.toStdString() for fmt in QtGui.QImageReader.supportedImageFormats())
 
 class ImageDecodeTaskSignals(QtCore.QObject):
     """Signals for the image decode task."""
@@ -53,8 +53,8 @@ class TextureViewer(QtWidgets.QWidget):
 
     # Viewer attributes
     name = "Texture Viewer"
-    accepted_extensions = QT_SUPPORTED_FORMATS + ("tga", "ico",
-                           "tiff", "dds", "pvr", "ktx", "astc", "cbk")
+    accepted_extensions = QT_SUPPORTED_FORMATS + ["tga", "ico",
+                           "tiff", "dds", "pvr", "ktx", "astc", "cbk"]
 
     def __init__(self):
         super().__init__()

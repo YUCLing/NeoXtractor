@@ -24,7 +24,7 @@ class MeshViewer(QtWidgets.QWidget):
 
     # Viewer attributes
     name = "Mesh Viewer"
-    accepted_extensions = ("mesh")
+    accepted_extensions = ["mesh"]
 
     def __init__(self, parent=None):
         super().__init__(parent)

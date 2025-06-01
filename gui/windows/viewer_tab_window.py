@@ -60,11 +60,17 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
 
             open_file_action = menu.addAction("Open File")
             def open_file_dialog():
+                file_filter = "All Files (*)"
+                if hasattr(self._viewer_factory, "accepted_extensions") and \
+                    (not hasattr(self._viewer_factory, "allow_unsupported_extensions") or \
+                     not getattr(self._viewer_factory, "allow_unsupported_extensions")):
+                    extensions = getattr(self._viewer_factory, "accepted_extensions")
+                    file_filter = f"Supported Files (*.{' *.'.join(extensions)})"
                 file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                     self,
                     "Open File",
                     "",
-                    "All Files (*)"
+                    file_filter
                 )
                 if file_path:
                     with open(file_path, "rb") as file:

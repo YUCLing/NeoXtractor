@@ -10,6 +10,7 @@ class HexViewer(QtWidgets.QWidget):
 
     # Viewer name
     name = "Hex Viewer"
+    allow_unsupported_extensions = True
 
     _data_inspector_labels: dict[str, QtWidgets.QLabel] = {}
 

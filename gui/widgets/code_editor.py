@@ -298,6 +298,8 @@ class CodeEditor(QWidget):
 
     # Viewer name
     name = "Code Viewer"
+    accepted_extensions = ["txt", "h", "json", "py", "xml"]
+    allow_unsupported_extensions = True
 
     _ext_lang_map: dict[str, str] = {}
 
