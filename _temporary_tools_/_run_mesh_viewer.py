@@ -3,7 +3,7 @@ from PySide6 import QtWidgets
 
 import _use_application_modules # pylint: disable=unused-import
 
-from gui.widgets.mesh_viewer.viewer_widget import MeshViewer
+from gui.widgets.mesh_viewer import MeshViewer
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     def open_mesh_file():
         file_dialog = QtWidgets.QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(
-            wnd, 
+            wnd,
             "Open Mesh File", 
             "", 
             "Mesh Files (*.mesh)"
@@ -29,14 +29,13 @@ if __name__ == "__main__":
     open_button.clicked.connect(open_mesh_file)
 
     viewer = MeshViewer()
-    viewer.setApi(QtWidgets.QRhiWidget.Api.Vulkan)
-    viewer.draw_normals = True
+    viewer.render_widget.setApi(QtWidgets.QRhiWidget.Api.Vulkan)
 
     layout.addWidget(viewer)
 
-    wnd.setWindowTitle(f"Mesh Viewer - {viewer.api().name}")
+    wnd.setWindowTitle(f"Mesh Viewer - {viewer.render_widget.api().name}")
     wnd.resize(800, 600)
     wnd.show()
 
-    print(viewer.api())
+    print(viewer.render_widget.api())
     sys.exit(app.exec())
