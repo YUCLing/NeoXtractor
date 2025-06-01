@@ -16,6 +16,7 @@ from gui.utils.config import save_config_manager_to_settings
 from gui.utils.viewer import find_best_viewer
 from gui.widgets.code_editor import CodeEditor
 from gui.widgets.hex_viewer import HexViewer
+from gui.widgets.mesh_viewer.viewer_widget import MeshViewer
 from gui.widgets.npk_file_list import NPKFileList
 from gui.widgets.preview_widget import PreviewWidget
 from gui.widgets.texture_viewer import TextureViewer
@@ -75,7 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.list_widget.preview_entry.connect(lambda _row, entry: self.preview_widget.set_file(entry))
         def open_tab_window_for_entry(_row: int, entry: NPKEntry):
             previewer_type = find_best_viewer(entry.extension, bool(entry.data_flags & NPKEntryDataFlags.TEXT))
-            wnd = self._get_tab_window_for_viewwer(previewer_type)
+            wnd = self._get_tab_window_for_viewer(previewer_type)
             wnd.load_file(entry.data, entry.filename)
             wnd.show()
         self.list_widget.open_entry.connect(open_tab_window_for_entry)
@@ -258,13 +259,16 @@ class MainWindow(QtWidgets.QMainWindow):
             menu = QtWidgets.QMenu("Tools")
 
             menu.addAction("Hex Viewer",
-                lambda: self._get_tab_window_for_viewwer(HexViewer).show()
+                lambda: self._get_tab_window_for_viewer(HexViewer).show()
             )
             menu.addAction("Code Viewer",
-                lambda: self._get_tab_window_for_viewwer(CodeEditor).show()
+                lambda: self._get_tab_window_for_viewer(CodeEditor).show()
             )
             menu.addAction("Texture Viewer",
-                lambda: self._get_tab_window_for_viewwer(TextureViewer).show()
+                lambda: self._get_tab_window_for_viewer(TextureViewer).show()
+            )
+            menu.addAction("Mesh Viewer",
+                lambda: self._get_tab_window_for_viewer(MeshViewer).show()
             )
 
             return menu
@@ -277,7 +281,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.refresh_config_list()
 
-    def _get_tab_window_for_viewwer(self, viewer: Any) -> ViewerTabWindow:
+    def _get_tab_window_for_viewer(self, viewer: Any) -> ViewerTabWindow:
         if viewer not in self._viewer_windows:
             self._viewer_windows[viewer] = ViewerTabWindow(viewer)
         return self._viewer_windows[viewer]
