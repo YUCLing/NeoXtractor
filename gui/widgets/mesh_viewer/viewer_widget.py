@@ -590,6 +590,12 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         if self._bone_lines_vbuf:
             self._bone_lines_vbuf.destroy()
             self._bone_lines_vbuf = None
+        if self._bone_points_vbuf:
+            self._bone_points_vbuf.destroy()
+            self._bone_points_vbuf = None
+        if self._normals_vbuf:
+            self._normals_vbuf.destroy()
+            self._normals_vbuf = None
         self._mesh_data = None
 
     @overload
