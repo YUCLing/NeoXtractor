@@ -4,6 +4,7 @@ import ctypes
 import os
 from typing import cast, overload
 
+import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from core.mesh_loader.loader import MeshLoader
@@ -12,6 +13,7 @@ from core.utils import get_application_path
 from gui.renderers.mesh_renderer import MeshRenderer, ProcessedMeshData
 from gui.renderers.text_renderer import TextRenderer
 from gui.utils.rendering import grid
+from gui.widgets.mesh_viewer.camera import OrthogonalDirection
 
 from .camera_controller import CameraController
 
@@ -102,7 +104,7 @@ class MeshRenderWidget(QtWidgets.QRhiWidget, CameraController):
     def draw_bones(self, value: bool):
         """Set whether to draw bones in the mesh."""
         self._mesh_renderer.draw_bones = value
-    
+
     @property
     def draw_normals(self) -> bool:
         """Get whether normals visualization is enabled."""
@@ -335,6 +337,19 @@ class MeshRenderWidget(QtWidgets.QRhiWidget, CameraController):
     def keyPressEvent(self, event: QtGui.QKeyEvent):
         if event.key() == QtCore.Qt.Key.Key_Control:
             self._alternative_actions = True
+        elif event.key() == QtCore.Qt.Key.Key_F:
+            if self.mesh_data is not None:
+                self.camera.focus(self.mesh_data.center.tolist())
+                fov_radians = np.radians(self.camera.fov_y)
+
+                # Ensure full object fits in view
+                ideal_distance = self.mesh_data.size / np.sin(fov_radians / 2)
+
+                # Adjust camera distance to ensure object fits in view
+                self.camera.dist = max(self.camera.min_dist, min(ideal_distance, self.camera.max_dist))
+            else:
+                self.camera.focus()
+            self.camera.orthogonal(OrthogonalDirection.FRONT)
         super()._camera_key_pressed_event(event)
     def keyReleaseEvent(self, event: QtGui.QKeyEvent):
         if event.key() == QtCore.Qt.Key.Key_Control:

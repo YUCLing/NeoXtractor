@@ -52,6 +52,10 @@ class ProcessedMeshData:
 
         self.normal_lines = normal_line_vertices
 
+        # Calculate center and size
+        self.center = (np.max(pos, axis=0) + np.min(pos, axis=0)) / 2
+        self.size = np.max(np.linalg.norm(pos - self.center, axis=1))
+
         # Calculate each bone's position and connections
         bone_positions = []
         bone_lines = []

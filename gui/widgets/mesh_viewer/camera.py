@@ -1,24 +1,75 @@
+"""Provides a 3D camera class."""
+
 from enum import IntEnum
 import math
 from PySide6.QtGui import QVector3D, QVector4D, QMatrix4x4
 
 class OrthogonalDirection(IntEnum):
+    """
+    Enumeration defining standard orthogonal viewing directions for 3D camera positioning.
+    This enum provides predefined integer values for common orthogonal camera orientations
+    used in 3D mesh viewing applications. Each direction represents a standard viewpoint
+    from which to observe 3D objects.
+    Attributes:
+        FRONT (int): Front-facing view direction (value: 1)
+        RIGHT (int): Right-side view direction (value: 3)  
+        TOP (int): Top-down view direction (value: 7)
+    """
+
     FRONT = 1
     RIGHT = 3
     TOP = 7
 
 class Camera:
+    """
+    A 3D camera class for mesh viewing with support for perspective and orthographic projections.
+    This camera implementation provides functionality for 3D scene navigation including:
+    - Orbital camera movement around a target point
+    - Pan and zoom operations
+    - Perspective and orthographic projection modes
+    - Euler angle rotation handling
+    - View and projection matrix generation
+    The camera uses Qt's QVector4D and QMatrix4x4 classes for 3D math operations
+    and supports both free-form movement and constrained orthogonal views.
+    Attributes:
+        pitch (float): Rotation around X-axis in degrees
+        yaw (float): Rotation around Y-axis in degrees  
+        roll (float): Rotation around Z-axis in degrees
+        dist (float): Distance from camera to target point
+        fov_y (float): Vertical field of view in degrees for perspective projection
+        aspect_ratio (float): Width/height ratio for projection calculations
+        perspective (bool): True for perspective projection, False for orthographic
+        min_dist (float): Minimum allowed distance for zoom operations
+        max_dist (float): Maximum allowed distance for zoom operations
+    Example:
+        camera = Camera()
+        camera.set_aspect_ratio(800, 600)
+        camera.orbit(10, 5)  # Rotate camera
+        camera.dolly(-2)     # Zoom in
+        view_matrix = camera.view()
+        proj_matrix = camera.proj()
+    """
+
     def __init__(self):
         self._pos = QVector4D(0, 1, 4, 1)
         self.pitch = 0.0
         self.yaw = 0.0
         self.roll = 0.0
-        self.dist = 5
+        self._dist = 5
         self.fov_y = 45
         self.aspect_ratio = 1
         self.perspective = True
         self.min_dist = 5
         self.max_dist = 1500
+
+    @property
+    def dist(self):
+        """Return current distance from camera to target."""
+        return self._dist
+    @dist.setter
+    def dist(self, value):
+        """Set distance, ensuring it stays within min/max bounds."""
+        self._dist = max(self.min_dist, min(value, self.max_dist))
 
     def move(self, velocity: QVector4D):
         """Update camera position based on velocity."""
@@ -116,12 +167,11 @@ class Camera:
         elif direct == OrthogonalDirection.TOP:
             self.pitch = -90.0 if not opposite else 90.0
 
-    def focus(self, point):
+    def focus(self, point: list | tuple | None = None):
         """Focus camera on a specific point"""
         if isinstance(point, (list, tuple)) and len(point) >= 3:
             focus_point = QVector4D(point[0], point[1], point[2], 1.0)
         else:
-            # TODO: Confirm this behavior
             focus_point = QVector4D(0.0, 0.0, 0.0, 1.0)
 
         self._pos = focus_point
