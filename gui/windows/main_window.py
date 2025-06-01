@@ -12,6 +12,7 @@ from core.npk.types import NPKEntry, NPKEntryDataFlags
 from gui.config_manager import ConfigManager
 from gui.models.npk_file_model import NPKFileModel
 from gui.npk_entry_filter import NPKEntryFilter
+from gui.settings_manager import SettingsManager
 from gui.utils.config import save_config_manager_to_settings
 from gui.utils.viewer import find_best_viewer
 from gui.widgets.code_editor import CodeEditor
@@ -22,6 +23,7 @@ from gui.widgets.preview_widget import PreviewWidget
 from gui.widgets.texture_viewer import TextureViewer
 from gui.windows.about_window import AboutWindow
 from gui.windows.config_manager_window import ConfigManagerWindow
+from gui.windows.settings_window import SettingsWindow
 from gui.windows.viewer_tab_window import ViewerTabWindow
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -53,6 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.config: Config | None = None
 
         self.config_manager: ConfigManager = self.app.property("config_manager")
+        self.settings_manager: SettingsManager = self.app.property("settings_manager")
 
         self.main_layout = QtWidgets.QHBoxLayout()
 
@@ -255,6 +258,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.menuBar().addMenu(file_menu())
 
+        settings_action = self.menuBar().addAction("Settings")
+        settings_action.setStatusTip("Open Settings window.")
+        settings_action.triggered.connect(
+            lambda: SettingsWindow(self.settings_manager, self).exec()
+        )
+
         def tools_menu() -> QtWidgets.QMenu:
             menu = QtWidgets.QMenu("Tools")
 
@@ -285,6 +294,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if viewer not in self._viewer_windows:
             self._viewer_windows[viewer] = ViewerTabWindow(viewer)
         return self._viewer_windows[viewer]
+
+    def get_tab_windows(self) -> list[ViewerTabWindow]:
+        """Get all viewer tab windows."""
+        return list(self._viewer_windows.values())
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         force_close = False

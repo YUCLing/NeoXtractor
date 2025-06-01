@@ -13,6 +13,7 @@ from core.utils import get_application_path
 from gui.renderers.mesh_renderer import MeshRenderer, ProcessedMeshData
 from gui.renderers.text_renderer import TextRenderer
 from gui.utils.rendering import grid
+from gui.widgets.managed_rhi_widget import ManagedRhiWidget
 from gui.widgets.mesh_viewer.camera import OrthogonalDirection
 
 from .camera_controller import CameraController
@@ -40,7 +41,7 @@ GRID_VERTEX_DATA = [
 
 REF_POINT_COLOR = [1.0, 0.0, 0.0]
 
-class MeshRenderWidget(QtWidgets.QRhiWidget, CameraController):
+class MeshRenderWidget(ManagedRhiWidget, CameraController):
     """A Qt widget for rendering 3D meshes with bones and normals visualization.
     This widget provides an interactive 3D mesh viewer using Qt's RHI (Render Hardware Interface)
     for cross-platform GPU rendering. It supports rendering meshes with optional bone structure

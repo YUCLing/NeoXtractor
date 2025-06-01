@@ -39,6 +39,8 @@ def run():
     app.setProperty("settings_manager", settings_manager)
     app.setProperty("config_manager", config_manager)
 
+    app.setProperty("graphics_backend", settings_manager.get("graphics.backend", QtWidgets.QRhiWidget.Api.Null.value))
+
     # First run, setup default settings
     if first_run:
         get_logger().info("First run, setting up default settings.")
