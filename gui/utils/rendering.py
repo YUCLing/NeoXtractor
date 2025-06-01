@@ -1,6 +1,16 @@
 """Utilities for rendering."""
 
 import numpy as np
+from PySide6 import QtWidgets, QtGui
+
+def static_uniform_buffer_type(widget: QtWidgets.QRhiWidget) -> QtGui.QRhiBuffer.Type:
+    """
+    Shorthand function for using static uniform buffer when possible.
+
+    In Direct3D 11, uniform buffers must use Dynamic buffers.
+    """
+    return QtGui.QRhiBuffer.Type.Dynamic if widget.api() == QtWidgets.QRhiWidget.Api.Direct3D11 else \
+        QtGui.QRhiBuffer.Type.Immutable
 
 def grid(size: int, steps: int):
     """

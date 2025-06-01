@@ -12,7 +12,7 @@ from core.mesh_loader.parsers import MeshData
 from core.utils import get_application_path
 from gui.renderers.mesh_renderer import MeshRenderer, ProcessedMeshData
 from gui.renderers.text_renderer import TextRenderer
-from gui.utils.rendering import grid
+from gui.utils.rendering import grid, static_uniform_buffer_type
 from gui.widgets.managed_rhi_widget import ManagedRhiWidget
 from gui.widgets.mesh_viewer.camera import OrthogonalDirection
 
@@ -195,7 +195,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
             cb.resourceUpdate(resource_updates)
 
         if self._ref_point_pipeline is None:
-            self._ref_point_ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+            self._ref_point_ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self),
                                                          QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
                                                          3 * ctypes.sizeof(ctypes.c_float)
                                                      )
@@ -239,8 +239,9 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
             self._ref_point_pipeline.create()
 
             resource_updates = self._rhi.nextResourceUpdateBatch()
-            arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
-            resource_updates.uploadStaticBuffer(self._ref_point_ubuf, cast(int, arr))
+            if self.api() != self.Api.Direct3D11:
+                arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
+                resource_updates.uploadStaticBuffer(self._ref_point_ubuf, cast(int, arr))
             arr = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 5.0)
             resource_updates.uploadStaticBuffer(self._ref_point_vbuf, cast(int, arr))
             cb.resourceUpdate(resource_updates)
@@ -300,6 +301,10 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         vp_data = view_proj.data()
         arr = (ctypes.c_float * len(vp_data))(*vp_data)
         resource_updates.updateDynamicBuffer(self._mvp_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
+
+        if self.api() == self.Api.Direct3D11 and self._ref_point_ubuf is not None:
+            arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
+            resource_updates.updateDynamicBuffer(self._ref_point_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
         self._mesh_renderer.update_resources(resource_updates, self.camera)
         if self.draw_text:

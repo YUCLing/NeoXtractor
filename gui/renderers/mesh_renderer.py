@@ -8,6 +8,7 @@ from PySide6 import QtGui, QtWidgets
 
 from core.mesh_loader.parsers import MeshData
 from core.utils import get_application_path
+from gui.utils.rendering import static_uniform_buffer_type
 from gui.widgets.mesh_viewer.camera import Camera
 
 MESH_COLOR = [0.8, 0.8, 0.8]
@@ -271,7 +272,7 @@ class MeshRenderer:
                                             )
             self._mesh_vert_ubuf.create()
 
-            self._mesh_frag_ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+            self._mesh_frag_ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self._rhi_widget),
                                             QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
                                             3 * ctypes.sizeof(ctypes.c_float)
                                             )
@@ -335,10 +336,12 @@ class MeshRenderer:
                 )
             self._mesh_wireframe_pipeline.create()
 
-            resource_updates = self._rhi.nextResourceUpdateBatch()
-            arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
-            resource_updates.uploadStaticBuffer(self._mesh_frag_ubuf, cast(int, arr))
-            cb.resourceUpdate(resource_updates)
+            # Direct3D 11 must use dynamic uniform buffer
+            if self._rhi_widget.api() != self._rhi_widget.Api.Direct3D11:
+                resource_updates = self._rhi.nextResourceUpdateBatch()
+                arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
+                resource_updates.uploadStaticBuffer(self._mesh_frag_ubuf, cast(int, arr))
+                cb.resourceUpdate(resource_updates)
 
         if self._vertex_line_pipeline is None:
             self._vertex_line_pipeline = self._rhi.newGraphicsPipeline()
@@ -363,7 +366,7 @@ class MeshRenderer:
             self._vertex_line_pipeline.create()
 
         if self._bone_point_pipeline is None:
-            self._bone_points_ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+            self._bone_points_ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self._rhi_widget),
                                                          QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
                                                             3 * ctypes.sizeof(ctypes.c_float)
                                                             )
@@ -400,10 +403,12 @@ class MeshRenderer:
             self._bone_point_pipeline.setRenderPassDescriptor(self._rhi_widget.renderTarget().renderPassDescriptor())
             self._bone_point_pipeline.create()
 
-            resource_updates = self._rhi.nextResourceUpdateBatch()
-            arr = (ctypes.c_float * len(BONE_COLOR))(*BONE_COLOR)
-            resource_updates.uploadStaticBuffer(self._bone_points_ubuf, cast(int, arr))
-            cb.resourceUpdate(resource_updates)
+            # Direct3D 11 must use dynamic uniform buffer
+            if self._rhi_widget.api() != self._rhi_widget.Api.Direct3D11:
+                resource_updates = self._rhi.nextResourceUpdateBatch()
+                arr = (ctypes.c_float * len(BONE_COLOR))(*BONE_COLOR)
+                resource_updates.uploadStaticBuffer(self._bone_points_ubuf, cast(int, arr))
+                cb.resourceUpdate(resource_updates)
 
     def releaseResources(self):
         """
@@ -542,6 +547,16 @@ class MeshRenderer:
 
                 normals_arr = (ctypes.c_float * len(normals_data))(*normals_data)
                 resource_updates.uploadStaticBuffer(self._normals_vbuf, cast(int, normals_arr))
+
+        # Direct3D 11 must use dynamic uniform buffer
+        if self._rhi_widget.api() == self._rhi_widget.Api.Direct3D11:
+            if self._mesh_vbuf is not None and self._mesh_frag_ubuf is not None:
+                arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
+                resource_updates.updateDynamicBuffer(self._mesh_frag_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
+
+            if self.draw_bones and self._bone_points_ubuf is not None:
+                arr = (ctypes.c_float * len(BONE_COLOR))(*BONE_COLOR)
+                resource_updates.updateDynamicBuffer(self._bone_points_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
     def render(self, cb: QtGui.QRhiCommandBuffer):
         """
