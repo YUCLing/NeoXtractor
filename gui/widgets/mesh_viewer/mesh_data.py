@@ -33,10 +33,17 @@ class ProcessedMeshData:
         # Reorder indices
         self.indices = np.array(raw_data.face)[:, [1, 0, 2]]
 
+        # Calculate normal lines
+        normal_line_vertices = np.empty((pos.shape[0] * 2, 3), dtype='f4')
+        normal_line_vertices[0::2] = pos
+        normal_line_vertices[1::2] = pos + norm * 0.008
+
+        self.normal_lines = normal_line_vertices
+
+        # Calculate each bone's position and connections
         bone_positions = []
         bone_lines = []
 
-        # Calculate each bone's position and connections
         for i, parent in enumerate(raw_data.bone_parent):
             # Apply the flip to the bone's matrix
             matrix = raw_data.bone_matrix[i]

@@ -43,11 +43,14 @@ MESH_COLOR = [0.8, 0.8, 0.8]
 
 BONE_COLOR = [1.0, 0.8, 0.3]
 
+NORMALS_COLOR = [0.8, 0.1, 0.3]
+
 class MeshViewer(QtWidgets.QRhiWidget, CameraController):
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
 
         self.draw_bones = True
+        self.draw_normals = False
         self.wireframe_mode = False
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
@@ -64,7 +67,7 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         self._ref_point_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._mesh_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._mesh_wireframe_pipeline: QtGui.QRhiGraphicsPipeline | None = None
-        self._bone_line_pipeline: QtGui.QRhiGraphicsPipeline | None = None
+        self._vertex_line_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._bone_point_pipeline: QtGui.QRhiGraphicsPipeline | None = None
 
         self._grid_vbuf: QtGui.QRhiBuffer | None = None
@@ -85,6 +88,8 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         self._bone_points_ubuf: QtGui.QRhiBuffer | None = None
         self._bone_points_vbuf: QtGui.QRhiBuffer | None = None
         self._bone_points_srb: QtGui.QRhiShaderResourceBindings | None = None
+
+        self._normals_vbuf: QtGui.QRhiBuffer | None = None
 
         self._text_renderer = TextRenderer(self, 14)
 
@@ -303,9 +308,9 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
             resource_updates.uploadStaticBuffer(self._mesh_frag_ubuf, cast(int, arr))
             cb.resourceUpdate(resource_updates)
 
-        if self._bone_line_pipeline is None:
-            self._bone_line_pipeline = self._rhi.newGraphicsPipeline()
-            self._bone_line_pipeline.setShaderStages([
+        if self._vertex_line_pipeline is None:
+            self._vertex_line_pipeline = self._rhi.newGraphicsPipeline()
+            self._vertex_line_pipeline.setShaderStages([
                 QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Vertex, self._colored_vertices_shaders[0]),
                 QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Fragment, self._colored_vertices_shaders[1])
             ])
@@ -319,11 +324,11 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
                                                3 * ctypes.sizeof(ctypes.c_float)
                                                ),
             ])
-            self._bone_line_pipeline.setVertexInputLayout(input_layout)
-            self._bone_line_pipeline.setShaderResourceBindings(self._mvp_srb)
-            self._bone_line_pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Lines)
-            self._bone_line_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
-            self._bone_line_pipeline.create()
+            self._vertex_line_pipeline.setVertexInputLayout(input_layout)
+            self._vertex_line_pipeline.setShaderResourceBindings(self._mvp_srb)
+            self._vertex_line_pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Lines)
+            self._vertex_line_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
+            self._vertex_line_pipeline.create()
 
         if self._bone_point_pipeline is None:
             self._bone_points_ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
@@ -473,6 +478,20 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
                     bone_arr = (ctypes.c_float * len(bone_data))(*bone_data)
                     resource_updates.uploadStaticBuffer(self._bone_points_vbuf, cast(int, bone_arr))
 
+            if self._normals_vbuf is None:
+                # Create vertex buffer for normals
+                normals_vertices = np.array(self._mesh_data.normal_lines).reshape(-1, 3)
+                normals_color = np.tile(NORMALS_COLOR, (len(normals_vertices), 1))
+                normals_data = np.column_stack([normals_vertices, normals_color]).flatten().tolist()
+                self._normals_vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+                                                    QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
+                                                    ctypes.sizeof(ctypes.c_float) * len(normals_data)
+                                                    )
+                self._normals_vbuf.create()
+
+                normals_arr = (ctypes.c_float * len(normals_data))(*normals_data)
+                resource_updates.uploadStaticBuffer(self._normals_vbuf, cast(int, normals_arr))
+
         self._text_renderer.update_resources(resource_updates)
 
         clr = QtGui.QColor.fromRgbF(0.23, 0.23, 0.23)
@@ -505,8 +524,8 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
             cb.drawIndexed(self._mesh_data.indices.size)
 
             if self.draw_bones and self._bone_lines_vbuf:
-                if self._bone_line_pipeline is not None:
-                    cb.setGraphicsPipeline(self._bone_line_pipeline)
+                if self._vertex_line_pipeline is not None:
+                    cb.setGraphicsPipeline(self._vertex_line_pipeline)
                     cb.setViewport(viewport)
                     cb.setShaderResources()
                     cb.setVertexInput(0, [(self._bone_lines_vbuf, 0)])
@@ -518,6 +537,13 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
                     cb.setShaderResources()
                     cb.setVertexInput(0, [(self._bone_points_vbuf, 0)])
                     cb.draw(len(self._mesh_data.bone_positions))
+
+            if self.draw_normals and self._vertex_line_pipeline is not None:
+                cb.setGraphicsPipeline(self._vertex_line_pipeline)
+                cb.setViewport(viewport)
+                cb.setShaderResources()
+                cb.setVertexInput(0, [(self._normals_vbuf, 0)])
+                cb.draw(len(self._mesh_data.normal_lines))
 
         self._text_renderer.render(cb)
 

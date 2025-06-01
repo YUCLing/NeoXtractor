@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
     viewer = MeshViewer()
     viewer.setApi(QtWidgets.QRhiWidget.Api.Vulkan)
+    viewer.draw_normals = True
 
     layout.addWidget(viewer)
 
