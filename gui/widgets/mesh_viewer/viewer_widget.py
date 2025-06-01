@@ -397,8 +397,6 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
             self._text_renderer.render_text(f"{key}:", (20, y_pos), (0.5, 1.0, 1.0, 1.0))
             self._text_renderer.render_text(action, (90, y_pos), (1.0, 1.0, 1.0, 1.0))
 
-        self._text_renderer.update_resources(cb)
-
         resource_updates = self._rhi.nextResourceUpdateBatch()
 
         # Update view-projection matrix from camera
@@ -474,6 +472,8 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
 
                     bone_arr = (ctypes.c_float * len(bone_data))(*bone_data)
                     resource_updates.uploadStaticBuffer(self._bone_points_vbuf, cast(int, bone_arr))
+
+        self._text_renderer.update_resources(resource_updates)
 
         clr = QtGui.QColor.fromRgbF(0.23, 0.23, 0.23)
         cb.beginPass(self.renderTarget(), clr, QtGui.QRhiDepthStencilClearValue(1, 0), resource_updates)

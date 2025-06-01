@@ -320,7 +320,7 @@ class TextRenderer:
 
         cb.resourceUpdate(resource_updates)
 
-    def update_resources(self, cb: QtGui.QRhiCommandBuffer):
+    def update_resources(self, resource_updates: QtGui.QRhiResourceUpdateBatch):
         """
         Prepare a rendering pass by updating GPU resources with text geometry and uniforms.
         This method processes the queued text elements and prepares the necessary GPU buffers
@@ -334,8 +334,6 @@ class TextRenderer:
 
         if not self._rhi or not self._pipeline or not self._srb or not self._vbuf or not self._ibuf or not self._ubuf:
             return
-
-        resource_updates = self._rhi.nextResourceUpdateBatch()
 
         projection = QtGui.QMatrix4x4()
         if self._rhi_widget.api() == QtWidgets.QRhiWidget.Api.Vulkan:
@@ -412,8 +410,6 @@ class TextRenderer:
         # Update vertex buffer
         resource_updates.updateDynamicBuffer(self._vbuf, 0, ctypes.sizeof(vertex_array),
                                           cast(int, vertex_array))
-
-        cb.resourceUpdate(resource_updates)
 
     def render(self, cb: QtGui.QRhiCommandBuffer):
         """
