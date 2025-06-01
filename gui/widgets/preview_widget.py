@@ -112,7 +112,8 @@ class PreviewWidget(QtWidgets.QWidget):
             # Memory cleanup
             self._set_data_for_previewer(p, None)
             p.setVisible(False)
-        previewer.setVisible(True)
+        if self.isVisible():
+            previewer.setVisible(True)
 
         # Set the previewer selector to the selected previewer
         self.previewer_selector.setCurrentIndex(self.previewer_selector.findData(previewer))
