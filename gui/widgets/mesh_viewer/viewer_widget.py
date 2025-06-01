@@ -1,8 +1,31 @@
+"""Provides mesh viewer."""
+
 from PySide6 import QtWidgets, QtCore
 
 from gui.widgets.mesh_viewer.render_widget import MeshRenderWidget
 
 class MeshViewer(QtWidgets.QWidget):
+    """
+    A Qt widget that provides a 3D mesh viewer with interactive controls.
+    This widget combines a mesh rendering area with control checkboxes for toggling
+    various display options like wireframe mode, bone visibility, and normal vectors.
+    Attributes:
+        wireframe_checkbox (QtWidgets.QCheckBox): Checkbox to toggle wireframe rendering mode
+        bone_checkbox (QtWidgets.QCheckBox): Checkbox to toggle bone display (enabled by default)
+        normal_checkbox (QtWidgets.QCheckBox): Checkbox to toggle normal vector display
+        render_widget (MeshRenderWidget): The OpenGL widget responsible for 3D mesh rendering
+        load_mesh: Reference to the render widget's load_mesh method
+        unload_mesh: Reference to the render widget's unload_mesh method
+    Args:
+        parent (QtWidgets.QWidget, optional): Parent widget. Defaults to None.
+    The widget automatically connects checkbox state changes to the corresponding
+    rendering options in the underlying MeshRenderWidget.
+    """
+
+    # Viewer attributes
+    name = "Mesh Viewer"
+    accepted_extensions = ("mesh")
+
     def __init__(self, parent=None):
         super().__init__(parent)
 

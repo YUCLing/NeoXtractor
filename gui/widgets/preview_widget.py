@@ -8,6 +8,7 @@ from core.utils import format_bytes
 from gui.utils.viewer import find_best_viewer, set_entry_for_viewer
 from gui.widgets.code_editor import CodeEditor
 from gui.widgets.hex_viewer import HexViewer
+from gui.widgets.mesh_viewer.viewer_widget import MeshViewer
 from gui.widgets.texture_viewer import TextureViewer
 
 SELECT_ENTRY_TEXT = "Select an entry to preview."
@@ -56,6 +57,7 @@ class PreviewWidget(QtWidgets.QWidget):
         self._add_previewer(self.code_editor)
 
         self._add_previewer(TextureViewer())
+        self._add_previewer(MeshViewer())
 
         for previewer in self._previewers:
             previewer.setVisible(False)
