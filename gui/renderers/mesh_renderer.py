@@ -8,7 +8,7 @@ from PySide6 import QtGui, QtWidgets
 
 from core.mesh_loader.parsers import MeshData
 from core.utils import get_application_path
-from gui.utils.rendering import static_uniform_buffer_type
+from gui.utils.rendering import is_d3d, static_uniform_buffer_type
 from gui.widgets.mesh_viewer.camera import Camera
 
 MESH_COLOR = [0.8, 0.8, 0.8]
@@ -336,8 +336,8 @@ class MeshRenderer:
                 )
             self._mesh_wireframe_pipeline.create()
 
-            # Direct3D 11 must use dynamic uniform buffer
-            if self._rhi_widget.api() != self._rhi_widget.Api.Direct3D11:
+            # Direct3D must use dynamic uniform buffer
+            if not is_d3d(self._rhi_widget):
                 resource_updates = self._rhi.nextResourceUpdateBatch()
                 arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
                 resource_updates.uploadStaticBuffer(self._mesh_frag_ubuf, cast(int, arr))
@@ -404,7 +404,7 @@ class MeshRenderer:
             self._bone_point_pipeline.create()
 
             # Direct3D 11 must use dynamic uniform buffer
-            if self._rhi_widget.api() != self._rhi_widget.Api.Direct3D11:
+            if not is_d3d(self._rhi_widget):
                 resource_updates = self._rhi.nextResourceUpdateBatch()
                 arr = (ctypes.c_float * len(BONE_COLOR))(*BONE_COLOR)
                 resource_updates.uploadStaticBuffer(self._bone_points_ubuf, cast(int, arr))
@@ -549,7 +549,7 @@ class MeshRenderer:
                 resource_updates.uploadStaticBuffer(self._normals_vbuf, cast(int, normals_arr))
 
         # Direct3D 11 must use dynamic uniform buffer
-        if self._rhi_widget.api() == self._rhi_widget.Api.Direct3D11:
+        if is_d3d(self._rhi_widget):
             if self._mesh_vbuf is not None and self._mesh_frag_ubuf is not None:
                 arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
                 resource_updates.updateDynamicBuffer(self._mesh_frag_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))

@@ -12,7 +12,7 @@ from core.mesh_loader.parsers import MeshData
 from core.utils import get_application_path
 from gui.renderers.mesh_renderer import MeshRenderer, ProcessedMeshData
 from gui.renderers.text_renderer import TextRenderer
-from gui.utils.rendering import grid, static_uniform_buffer_type
+from gui.utils.rendering import grid, is_d3d, static_uniform_buffer_type
 from gui.widgets.managed_rhi_widget import ManagedRhiWidget
 from gui.widgets.mesh_viewer.camera import OrthogonalDirection
 
@@ -239,7 +239,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
             self._ref_point_pipeline.create()
 
             resource_updates = self._rhi.nextResourceUpdateBatch()
-            if self.api() != self.Api.Direct3D11:
+            if not is_d3d(self):
                 arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
                 resource_updates.uploadStaticBuffer(self._ref_point_ubuf, cast(int, arr))
             arr = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 5.0)
@@ -302,7 +302,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         arr = (ctypes.c_float * len(vp_data))(*vp_data)
         resource_updates.updateDynamicBuffer(self._mvp_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
-        if self.api() == self.Api.Direct3D11 and self._ref_point_ubuf is not None:
+        if is_d3d(self) and self._ref_point_ubuf is not None:
             arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
             resource_updates.updateDynamicBuffer(self._ref_point_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
