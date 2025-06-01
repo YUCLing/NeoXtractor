@@ -457,3 +457,12 @@ class TextRenderer:
         :param scale: Scale factor for the text size.
         """
         self._text_queue.append(QueuedTextRender(text, position, color, scale))
+
+    def clear_queue(self):
+        """
+        Clear the text render queue.
+        This method empties the internal queue of text render requests,
+        effectively discarding any queued text that has not yet been rendered.
+        """
+        self._text_queue.clear()
+        self._char_count = 0

@@ -64,6 +64,8 @@ class MeshRenderWidget(QtWidgets.QRhiWidget, CameraController):
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
 
+        self.draw_text = True
+
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
         self._rhi: QtGui.QRhi | None = None
@@ -299,7 +301,10 @@ class MeshRenderWidget(QtWidgets.QRhiWidget, CameraController):
         resource_updates.updateDynamicBuffer(self._mvp_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
         self._mesh_renderer.update_resources(resource_updates, self.camera)
-        self._text_renderer.update_resources(resource_updates)
+        if self.draw_text:
+            self._text_renderer.update_resources(resource_updates)
+        else:
+            self._text_renderer.clear_queue()
 
         clr = QtGui.QColor.fromRgbF(0.23, 0.23, 0.23)
         cb.beginPass(self.renderTarget(), clr, QtGui.QRhiDepthStencilClearValue(1, 0), resource_updates)

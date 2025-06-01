@@ -52,6 +52,13 @@ class MeshViewer(QtWidgets.QWidget):
         self.normal_checkbox.checkStateChanged.connect(toggle_normals)
         control_layout.addWidget(self.normal_checkbox)
 
+        self.text_checkbox = QtWidgets.QCheckBox("Show Text", self)
+        self.text_checkbox.setChecked(True)
+        def toggle_text(state):
+            self.render_widget.draw_text = state == QtCore.Qt.CheckState.Checked
+        self.text_checkbox.checkStateChanged.connect(toggle_text)
+        control_layout.addWidget(self.text_checkbox)
+
         layout.addLayout(control_layout)
 
         self.render_widget = MeshRenderWidget(self)
