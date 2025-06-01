@@ -48,6 +48,7 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         super().__init__(parent)
 
         self.draw_bones = True
+        self.wireframe_mode = False
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
@@ -62,6 +63,7 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         self._grid_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._ref_point_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._mesh_pipeline: QtGui.QRhiGraphicsPipeline | None = None
+        self._mesh_wireframe_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._bone_line_pipeline: QtGui.QRhiGraphicsPipeline | None = None
         self._bone_point_pipeline: QtGui.QRhiGraphicsPipeline | None = None
 
@@ -115,7 +117,7 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
                     fsrc = QtGui.QShader.fromSerialized(fsrc)
 
                     self._mesh_shaders = (vsrc, fsrc)
-        
+
         if self._point_shaders is None:
             with open(os.path.join(shaders_path, "point.vert.qsb"), "rb") as f:
                 vsrc = f.read()
@@ -272,6 +274,29 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
             self._mesh_pipeline.setShaderResourceBindings(self._mesh_srb)
             self._mesh_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
             self._mesh_pipeline.create()
+
+            self._mesh_wireframe_pipeline = self._rhi.newGraphicsPipeline()
+            self._mesh_wireframe_pipeline.setShaderStages([
+                QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Vertex, self._mesh_shaders[0]),
+                QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Fragment, self._mesh_shaders[1])
+            ])
+            input_layout = QtGui.QRhiVertexInputLayout()
+            input_layout.setBindings([
+                QtGui.QRhiVertexInputBinding(6 * ctypes.sizeof(ctypes.c_float)),
+            ])
+            input_layout.setAttributes([
+                QtGui.QRhiVertexInputAttribute(0, 0, QtGui.QRhiVertexInputAttribute.Format.Float3, 0),
+                QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Format.Float3,
+                                               3 * ctypes.sizeof(ctypes.c_float)
+                                               )
+            ])
+            self._mesh_wireframe_pipeline.setDepthTest(True)
+            self._mesh_wireframe_pipeline.setDepthWrite(True)
+            self._mesh_wireframe_pipeline.setVertexInputLayout(input_layout)
+            self._mesh_wireframe_pipeline.setShaderResourceBindings(self._mesh_srb)
+            self._mesh_wireframe_pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Lines)
+            self._mesh_wireframe_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
+            self._mesh_wireframe_pipeline.create()
 
             resource_updates = self._rhi.nextResourceUpdateBatch()
             arr = (ctypes.c_float * len(MESH_COLOR))(*MESH_COLOR)
@@ -468,8 +493,11 @@ class MeshViewer(QtWidgets.QRhiWidget, CameraController):
         cb.setVertexInput(0, [(self._ref_point_vbuf, 0)])
         cb.draw(1)
 
-        if self._mesh_data is not None and self._mesh_pipeline is not None:
-            cb.setGraphicsPipeline(self._mesh_pipeline)
+        if self._mesh_data is not None and self._mesh_pipeline is not None and self._mesh_wireframe_pipeline:
+            if self.wireframe_mode:
+                cb.setGraphicsPipeline(self._mesh_wireframe_pipeline)
+            else:
+                cb.setGraphicsPipeline(self._mesh_pipeline)
             cb.setViewport(viewport)
             cb.setShaderResources()
             cb.setVertexInput(0, [(self._mesh_vbuf, 0)], self._mesh_ibuf, 0,
