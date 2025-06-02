@@ -43,9 +43,23 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: '0.7.4'
-          
-      - name: Install dependencies
+
+      - name: Set compiler flags for apple-m1
+        if: matrix.os == 'macos-latest' && matrix.arch == 'arm64'
         run: |
+          export CFLAGS="-march=armv8-a"
+          export CXXFLAGS="-march=armv8-a"
+
+      - name: Set compiler flags for apple-x64
+        if: matrix.os == 'macos-latest' && matrix.arch == 'x64'
+        run: |
+          export CFLAGS="-march=x86-64"
+          export CXXFLAGS="-march=x86-64"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          export CIBUILDWHEEL=1 # Make astc-encoder-py build for all instruction sets
           uv sync --locked
           uv pip install pyinstaller
 
