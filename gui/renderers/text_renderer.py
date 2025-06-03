@@ -213,10 +213,8 @@ class TextRenderer:
             - If pipeline already exists, returns early without re-initialization
         """
 
-        if self._pipeline is not None:
-            return
-
-        self._rhi = self._rhi_widget.rhi()
+        if self._rhi is None or self._rhi != self._rhi_widget.rhi():
+            self._rhi = self._rhi_widget.rhi()
 
         resource_updates = self._rhi.nextResourceUpdateBatch()
 

@@ -11,8 +11,9 @@ from core.mesh_loader.loader import MeshLoader
 from core.mesh_loader.parsers import MeshData
 from core.utils import get_application_path
 from gui.renderers.mesh_renderer import MeshRenderer, ProcessedMeshData
+from gui.renderers.point_renderer import PointRenderer
 from gui.renderers.text_renderer import TextRenderer
-from gui.utils.rendering import grid, is_d3d, static_uniform_buffer_type
+from gui.utils.rendering import grid
 from gui.widgets.managed_rhi_widget import ManagedRhiWidget
 from gui.widgets.mesh_viewer.camera import OrthogonalDirection
 
@@ -75,18 +76,17 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         self._point_shaders: tuple[QtGui.QShader, QtGui.QShader] | None = None
 
         self._grid_pipeline: QtGui.QRhiGraphicsPipeline | None = None
-        self._ref_point_pipeline: QtGui.QRhiGraphicsPipeline | None = None
 
         self._grid_vbuf: QtGui.QRhiBuffer | None = None
         self._mvp_ubuf: QtGui.QRhiBuffer | None = None
         self._mvp_srb: QtGui.QRhiShaderResourceBindings | None = None
 
-        self._ref_point_ubuf: QtGui.QRhiBuffer | None = None
-        self._ref_point_vbuf: QtGui.QRhiBuffer | None = None
-        self._ref_point_srb: QtGui.QRhiShaderResourceBindings | None = None
-
+        self._ref_point_renderer: PointRenderer = PointRenderer(self,
+                                 cast(tuple[float, float, float], tuple(REF_POINT_COLOR)))
         self._mesh_renderer = MeshRenderer(self)
         self._text_renderer = TextRenderer(self, 14)
+
+        self._ref_point_renderer.add_points([(0.0, 0.0, 0.0, 5.0)])
 
         self._alternative_actions = False
 
@@ -194,58 +194,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
             resource_updates.uploadStaticBuffer(self._grid_vbuf, cast(int, arr))
             cb.resourceUpdate(resource_updates)
 
-        if self._ref_point_pipeline is None:
-            self._ref_point_ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self),
-                                                         QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
-                                                         3 * ctypes.sizeof(ctypes.c_float)
-                                                     )
-            self._ref_point_ubuf.create()
-
-            self._ref_point_vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
-                                                        QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
-                                                        4 * ctypes.sizeof(ctypes.c_float)
-                                                        )
-            self._ref_point_vbuf.create()
-
-            self._ref_point_srb = self._rhi.newShaderResourceBindings()
-            self._ref_point_srb.setBindings([
-                QtGui.QRhiShaderResourceBinding.uniformBuffer(0,
-                                                            QtGui.QRhiShaderResourceBinding.StageFlag.VertexStage,
-                                                            self._mvp_ubuf),
-                QtGui.QRhiShaderResourceBinding.uniformBuffer(1,
-                                                            QtGui.QRhiShaderResourceBinding.StageFlag.FragmentStage,
-                                                            self._ref_point_ubuf),
-            ])
-            self._ref_point_srb.create()
-
-            self._ref_point_pipeline = self._rhi.newGraphicsPipeline()
-            self._ref_point_pipeline.setShaderStages([
-                QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Vertex, self._point_shaders[0]),
-                QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Type.Fragment, self._point_shaders[1])
-            ])
-            input_layout = QtGui.QRhiVertexInputLayout()
-            input_layout.setBindings([
-                QtGui.QRhiVertexInputBinding(4 * ctypes.sizeof(ctypes.c_float)),
-            ])
-            input_layout.setAttributes([
-                QtGui.QRhiVertexInputAttribute(0, 0, QtGui.QRhiVertexInputAttribute.Format.Float3, 0),
-                QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Format.Float,
-                                               3 * ctypes.sizeof(ctypes.c_float))
-            ])
-            self._ref_point_pipeline.setVertexInputLayout(input_layout)
-            self._ref_point_pipeline.setShaderResourceBindings(self._ref_point_srb)
-            self._ref_point_pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Points)
-            self._ref_point_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
-            self._ref_point_pipeline.create()
-
-            resource_updates = self._rhi.nextResourceUpdateBatch()
-            if not is_d3d(self):
-                arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
-                resource_updates.uploadStaticBuffer(self._ref_point_ubuf, cast(int, arr))
-            arr = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 5.0)
-            resource_updates.uploadStaticBuffer(self._ref_point_vbuf, cast(int, arr))
-            cb.resourceUpdate(resource_updates)
-
+        self._ref_point_renderer.initialize(cb, self._mvp_ubuf)
         self._mesh_renderer.initialize(cb,
                                        self._colored_vertices_shaders,
                                        self._point_shaders,
@@ -261,8 +210,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
 
         if self._rhi is None or \
             self._mvp_ubuf is None or \
-            self._grid_pipeline is None or \
-            self._ref_point_pipeline is None:
+            self._grid_pipeline is None:
             return
 
         viewport_height = self.renderTarget().pixelSize().height()
@@ -302,10 +250,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         arr = (ctypes.c_float * len(vp_data))(*vp_data)
         resource_updates.updateDynamicBuffer(self._mvp_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
-        if is_d3d(self) and self._ref_point_ubuf is not None:
-            arr = (ctypes.c_float * len(REF_POINT_COLOR))(*REF_POINT_COLOR)
-            resource_updates.updateDynamicBuffer(self._ref_point_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
-
+        self._ref_point_renderer.update_resources(resource_updates)
         self._mesh_renderer.update_resources(resource_updates, self.camera)
         if self.draw_text:
             self._text_renderer.update_resources(resource_updates)
@@ -324,12 +269,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         cb.setVertexInput(0, [(self._grid_vbuf, 0)])
         cb.draw(len(GRID_VERTEX_DATA) // 6)  # 6 floats per vertex (3 for position, 3 for color)
 
-        cb.setGraphicsPipeline(self._ref_point_pipeline)
-        cb.setViewport(viewport)
-        cb.setShaderResources()
-        cb.setVertexInput(0, [(self._ref_point_vbuf, 0)])
-        cb.draw(1)
-
+        self._ref_point_renderer.render(cb)
         self._mesh_renderer.render(cb)
         self._text_renderer.render(cb)
 
