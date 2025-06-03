@@ -56,6 +56,9 @@ class SettingsWindow(QtWidgets.QDialog):
         graphics_layout = QtWidgets.QHBoxLayout(graphics_group)
 
         options_layout = QtWidgets.QVBoxLayout()
+
+        options_layout.addStretch()
+
         self.backend_combobox = QtWidgets.QComboBox(self)
 
         self.backend_combobox.addItem("Auto", QtWidgets.QRhiWidget.Api.Null)
@@ -92,6 +95,8 @@ class SettingsWindow(QtWidgets.QDialog):
             lambda idx: set_msaa(self.msaa_combobox.itemData(idx))
         )
         options_layout.addWidget(self.msaa_combobox)
+
+        options_layout.addStretch()
 
         graphics_layout.addLayout(options_layout, stretch=3)
 
