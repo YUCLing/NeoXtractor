@@ -14,13 +14,9 @@ from gui.models.npk_file_model import NPKFileModel
 from gui.npk_entry_filter import NPKEntryFilter
 from gui.settings_manager import SettingsManager
 from gui.utils.config import save_config_manager_to_settings
-from gui.utils.viewer import find_best_viewer
-from gui.widgets.code_editor import CodeEditor
-from gui.widgets.hex_viewer import HexViewer
-from gui.widgets.mesh_viewer.viewer_widget import MeshViewer
+from gui.utils.viewer import ALL_VIEWERS, find_best_viewer, get_viewer_display_name
 from gui.widgets.npk_file_list import NPKFileList
 from gui.widgets.preview_widget import PreviewWidget
-from gui.widgets.texture_viewer import TextureViewer
 from gui.windows.about_window import AboutWindow
 from gui.windows.config_manager_window import ConfigManagerWindow
 from gui.windows.settings_window import SettingsWindow
@@ -267,18 +263,11 @@ class MainWindow(QtWidgets.QMainWindow):
         def tools_menu() -> QtWidgets.QMenu:
             menu = QtWidgets.QMenu("Tools")
 
-            menu.addAction("Hex Viewer",
-                lambda: self._get_tab_window_for_viewer(HexViewer).show()
-            )
-            menu.addAction("Code Viewer",
-                lambda: self._get_tab_window_for_viewer(CodeEditor).show()
-            )
-            menu.addAction("Texture Viewer",
-                lambda: self._get_tab_window_for_viewer(TextureViewer).show()
-            )
-            menu.addAction("Mesh Viewer",
-                lambda: self._get_tab_window_for_viewer(MeshViewer).show()
-            )
+            for viewer in ALL_VIEWERS:
+                menu.addAction(
+                    get_viewer_display_name(viewer),
+                    lambda v=viewer: self._get_tab_window_for_viewer(v).show()
+                )
 
             return menu
 

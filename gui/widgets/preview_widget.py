@@ -5,7 +5,7 @@ from PySide6 import QtWidgets, QtCore
 
 from core.npk.types import NPKEntry, NPKEntryDataFlags
 from core.utils import format_bytes
-from gui.utils.viewer import ALL_VIEWERS, find_best_viewer, set_entry_for_viewer
+from gui.utils.viewer import ALL_VIEWERS, find_best_viewer, get_viewer_display_name, set_entry_for_viewer
 
 SELECT_ENTRY_TEXT = "Select an entry to preview."
 
@@ -65,8 +65,7 @@ class PreviewWidget(QtWidgets.QWidget):
         :param previewer: The previewer to add.
         :param name: The name of the previewer.
         """
-        self.previewer_selector.addItem(getattr(previewer, "name") if hasattr(previewer, "name") else \
-                                        previewer.__class__.__name__, previewer)
+        self.previewer_selector.addItem(get_viewer_display_name(previewer), previewer)
         self._previewers.append(previewer)
 
     def _set_data_for_previewer(self, previewer: QtWidgets.QWidget, data: NPKEntry | None):

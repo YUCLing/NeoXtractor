@@ -68,3 +68,14 @@ def set_entry_for_viewer(viewer: QtWidgets.QWidget, data: NPKEntry | None):
     """
     set_data_for_viewer(viewer, data.data if data is not None else None, \
                          data.extension if data is not None else "dat")
+
+def get_viewer_display_name(viewer: QtWidgets.QWidget | type) -> str:
+    """
+    Get the display name for the viewer.
+    
+    :param viewer: The viewer to get the display name for.
+    :return: The display name of the viewer.
+    """
+    if hasattr(viewer, "name"):
+        return getattr(viewer, "name")
+    return viewer.__class__.__name__
