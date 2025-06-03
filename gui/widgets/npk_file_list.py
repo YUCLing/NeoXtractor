@@ -9,6 +9,7 @@ from core.npk.types import NPKEntry
 from gui.models.npk_file_model import NPKFileModel
 from gui.utils.config import save_config_manager_to_settings
 from gui.utils.npk import get_npk_file
+from gui.utils.viewer import ALL_VIEWERS, get_viewer_display_name
 
 class NPKFileList(QtWidgets.QListView):
     """
@@ -17,6 +18,7 @@ class NPKFileList(QtWidgets.QListView):
 
     preview_entry = QtCore.Signal(int, NPKEntry)
     open_entry = QtCore.Signal(int, NPKEntry)
+    open_entry_with = QtCore.Signal(int, NPKEntry, type)
 
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -149,6 +151,15 @@ class NPKFileList(QtWidgets.QListView):
         extract.triggered.connect(lambda: self.extract_entries(indexes))
 
         if len(indexes) == 1:
+            menu.addSeparator()
+            index = indexes[0]
+            row = index.row()
+            entry = npk_file.read_entry(row)
+            for viewer in ALL_VIEWERS:
+                viewer_action = menu.addAction("Open in " + get_viewer_display_name(viewer))
+                viewer_action.triggered.connect(
+                    lambda _checked, v=viewer: self.open_entry_with.emit(row, entry, v)
+                )
             menu.addSeparator()
             rename = menu.addAction("Rename")
             rename.triggered.connect(lambda: self.show_rename_dialog(indexes[0]))

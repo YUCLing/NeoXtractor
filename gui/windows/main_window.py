@@ -73,12 +73,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.list_widget = NPKFileList(self)
         self.list_widget.preview_entry.connect(lambda _row, entry: self.preview_widget.set_file(entry))
-        def open_tab_window_for_entry(_row: int, entry: NPKEntry):
-            previewer_type = find_best_viewer(entry.extension, bool(entry.data_flags & NPKEntryDataFlags.TEXT))
-            wnd = self._get_tab_window_for_viewer(previewer_type)
+        def open_tab_window_for_entry(_row: int, entry: NPKEntry, viewer: type | None = None):
+            if viewer is None:
+                viewer = find_best_viewer(entry.extension, bool(entry.data_flags & NPKEntryDataFlags.TEXT))
+            wnd = self._get_tab_window_for_viewer(viewer)
             wnd.load_file(entry.data, entry.filename)
             wnd.show()
         self.list_widget.open_entry.connect(open_tab_window_for_entry)
+        self.list_widget.open_entry_with.connect(open_tab_window_for_entry)
 
         self.filter = NPKEntryFilter(self.list_widget)
 

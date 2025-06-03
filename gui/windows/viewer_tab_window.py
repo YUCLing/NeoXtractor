@@ -5,7 +5,7 @@ import os
 from typing import Type, TypeVar
 from PySide6 import QtWidgets, QtCore
 
-from gui.utils.viewer import set_data_for_viewer
+from gui.utils.viewer import get_viewer_display_name, set_data_for_viewer
 
 T = TypeVar("T", bound=QtWidgets.QWidget)
 
@@ -22,7 +22,7 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
         super().__init__(parent)
 
         self._viewer_factory = viewer
-        self._viewer_name = getattr(viewer, "name") if hasattr(viewer, "name") else viewer.__name__
+        self._viewer_name = get_viewer_display_name(viewer)
 
         self.setWindowTitle(self._viewer_name)
         self.setMinimumSize(800, 600)
