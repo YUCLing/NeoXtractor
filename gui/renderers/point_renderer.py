@@ -12,7 +12,8 @@ from gui.utils.rendering import is_d3d, static_uniform_buffer_type
 
 class PointRenderer:
     """
-    PointRenderer is a class responsible for rendering 3D points in a Qt RHI (QRhi) context, supporting both Direct3D and other graphics backends.
+    PointRenderer is a class responsible for rendering 3D points in a Qt RHI (QRhi) context,
+    supporting both Direct3D and other graphics backends.
     Methods:
         __init__(rhi_widget, point_color): Initializes the PointRenderer with a QRhiWidget and optional point color.
         add_points(points, point_size=None): Adds points to the renderer, optionally specifying a point size.
@@ -43,7 +44,8 @@ class PointRenderer:
 
         self._shaders: tuple[QtGui.QShader, QtGui.QShader] | None = None
 
-        self._ubuf: QtGui.QRhiBuffer | None = None
+        self._vert_ubuf: QtGui.QRhiBuffer | None = None
+        self._frag_ubuf: QtGui.QRhiBuffer | None = None
         self._vbuf: QtGui.QRhiBuffer | None = None
         self._ibuf: QtGui.QRhiBuffer | None = None
         self._srb: QtGui.QRhiShaderResourceBindings | None = None
@@ -161,11 +163,18 @@ class PointRenderer:
                     )
 
         if self._pipeline is None:
-            self._ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self._rhi_widget),
+            if self._is_d3d:
+                self._vert_ubuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Dynamic,
+                                                      QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
+                                                      1 * ctypes.sizeof(ctypes.c_float)
+                                                      )
+                self._vert_ubuf.create()
+
+            self._frag_ubuf = self._rhi.newBuffer(static_uniform_buffer_type(self._rhi_widget),
                                                          QtGui.QRhiBuffer.UsageFlag.UniformBuffer,
                                                          3 * ctypes.sizeof(ctypes.c_float)
                                                      )
-            self._ubuf.create()
+            self._frag_ubuf.create()
 
             self._vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
                                              QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
@@ -181,14 +190,21 @@ class PointRenderer:
                 self._ibuf.create()
 
             self._srb = self._rhi.newShaderResourceBindings()
-            self._srb.setBindings([
+            bindings = [
                 QtGui.QRhiShaderResourceBinding.uniformBuffer(0,
                                                             QtGui.QRhiShaderResourceBinding.StageFlag.VertexStage,
                                                             mvp_ubuf),
                 QtGui.QRhiShaderResourceBinding.uniformBuffer(1,
                                                             QtGui.QRhiShaderResourceBinding.StageFlag.FragmentStage,
-                                                            self._ubuf),
-            ])
+                                                            self._frag_ubuf),
+            ]
+            if self._is_d3d:
+                bindings.append(
+                    QtGui.QRhiShaderResourceBinding.uniformBuffer(2,
+                                                                  QtGui.QRhiShaderResourceBinding.StageFlag.VertexStage,
+                                                                  cast(QtGui.QRhiBuffer, self._vert_ubuf))
+                )
+            self._srb.setBindings(bindings)
             self._srb.create()
 
             self._pipeline = self._rhi.newGraphicsPipeline()
@@ -222,9 +238,8 @@ class PointRenderer:
             if not self._is_d3d:
                 resource_updates = self._rhi.nextResourceUpdateBatch()
                 arr = (ctypes.c_float * len(self._point_color))(*self._point_color)
-                resource_updates.uploadStaticBuffer(self._ubuf, cast(int, arr))
+                resource_updates.uploadStaticBuffer(self._frag_ubuf, cast(int, arr))
                 cb.resourceUpdate(resource_updates)
-
 
     def update_resources(self, resource_updates: QtGui.QRhiResourceUpdateBatch):
         """
@@ -232,9 +247,15 @@ class PointRenderer:
 
         :param resource_updates: The resource update batch.
         """
-        if self._is_d3d and self._ubuf is not None:
-            arr = (ctypes.c_float * len(self._point_color))(*self._point_color)
-            resource_updates.updateDynamicBuffer(self._ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
+        if self._is_d3d:
+            if self._vert_ubuf is not None:
+                viewport = self._rhi_widget.renderTarget().pixelSize()
+                arr = (ctypes.c_float * 1)(viewport.width() / viewport.height())
+                resource_updates.updateDynamicBuffer(self._vert_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
+
+            if self._frag_ubuf is not None:
+                arr = (ctypes.c_float * len(self._point_color))(*self._point_color)
+                resource_updates.updateDynamicBuffer(self._frag_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
         if self._first_update:
             self._refresh_points_buf_data()
