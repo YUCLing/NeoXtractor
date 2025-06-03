@@ -5,14 +5,9 @@ from PySide6 import QtWidgets, QtCore
 
 from core.npk.types import NPKEntry, NPKEntryDataFlags
 from core.utils import format_bytes
-from gui.utils.viewer import find_best_viewer, set_entry_for_viewer
-from gui.widgets.code_editor import CodeEditor
-from gui.widgets.hex_viewer import HexViewer
-from gui.widgets.mesh_viewer.viewer_widget import MeshViewer
-from gui.widgets.texture_viewer import TextureViewer
+from gui.utils.viewer import ALL_VIEWERS, find_best_viewer, set_entry_for_viewer
 
 SELECT_ENTRY_TEXT = "Select an entry to preview."
-UNKNOWN_FILE_TYPE_TEXT = "Unknown file type. Using default viewer."
 
 class PreviewWidget(QtWidgets.QWidget):
     """
@@ -50,14 +45,10 @@ class PreviewWidget(QtWidgets.QWidget):
 
         self.widget_layout.addLayout(self.control_bar_layout)
 
-        self.hex_viewer = HexViewer()
-        self._add_previewer(self.hex_viewer)
-
-        self.code_editor = CodeEditor()
-        self._add_previewer(self.code_editor)
-
-        self._add_previewer(TextureViewer())
-        self._add_previewer(MeshViewer())
+        for viewer in ALL_VIEWERS:
+            previewer = viewer()
+            previewer.setParent(self)
+            self._add_previewer(previewer)
 
         for previewer in self._previewers:
             previewer.setVisible(False)
@@ -144,10 +135,6 @@ class PreviewWidget(QtWidgets.QWidget):
         for previewer in self._previewers:
             if isinstance(previewer, best_previewer):
                 self.select_previewer(previewer)
-
-        # TODO: Know when unknown file is encountered
-        #self.message_label.setText(UNKNOWN_FILE_TYPE_TEXT)
-        #self.message_label.setVisible(True)
 
     def clear(self):
         """
