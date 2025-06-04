@@ -59,6 +59,8 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
             menu = QtWidgets.QMenu("File", self)
 
             open_file_action = menu.addAction("Open File")
+            open_file_action.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DirOpenIcon))
+            open_file_action.setShortcut("Ctrl+O")
             def open_file_dialog():
                 file_filter = "All Files (*)"
                 if hasattr(self._viewer_factory, "accepted_extensions") and \
@@ -82,6 +84,9 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
             return menu
 
         self.menuBar().addMenu(file_menu())
+
+        if hasattr(self._viewer_factory, "setup_tab_window"):
+            getattr(self._viewer_factory, "setup_tab_window")(self)
 
     def load_file(self, data: bytes, filename: str):
         """
