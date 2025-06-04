@@ -277,6 +277,31 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
 
         self.update()
 
+    def focus_mesh(self):
+        """Focus the camera on the currently loaded mesh data.
+        This method adjusts the camera position and orientation to ensure that the
+        entire mesh fits within the view. It calculates the ideal distance based on
+        the mesh size and camera field of view, and sets the camera to an orthogonal
+        view from the front.
+        If no mesh data is loaded, it resets the camera focus to the default position.
+        Note:
+            This method should be called after loading a mesh to ensure it is properly centered
+            and visible in the viewer.
+        """
+
+        if self.mesh_data is not None:
+            self.camera.focus(self.mesh_data.center.tolist())
+            fov_radians = np.radians(self.camera.fov_y)
+
+            # Ensure full object fits in view
+            ideal_distance = self.mesh_data.size / np.sin(fov_radians / 2)
+
+            # Adjust camera distance to ensure object fits in view
+            self.camera.dist = max(self.camera.min_dist, min(ideal_distance, self.camera.max_dist))
+        else:
+            self.camera.focus()
+        self.camera.orthogonal(OrthogonalDirection.FRONT)
+
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super()._camera_mouse_pressed_event(event)
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
@@ -289,18 +314,7 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
         if event.key() == QtCore.Qt.Key.Key_Control:
             self._alternative_actions = True
         elif event.key() == QtCore.Qt.Key.Key_F:
-            if self.mesh_data is not None:
-                self.camera.focus(self.mesh_data.center.tolist())
-                fov_radians = np.radians(self.camera.fov_y)
-
-                # Ensure full object fits in view
-                ideal_distance = self.mesh_data.size / np.sin(fov_radians / 2)
-
-                # Adjust camera distance to ensure object fits in view
-                self.camera.dist = max(self.camera.min_dist, min(ideal_distance, self.camera.max_dist))
-            else:
-                self.camera.focus()
-            self.camera.orthogonal(OrthogonalDirection.FRONT)
+            self.focus_mesh()
         super()._camera_key_pressed_event(event)
     def keyReleaseEvent(self, event: QtGui.QKeyEvent):
         if event.key() == QtCore.Qt.Key.Key_Control:
@@ -353,3 +367,5 @@ class MeshRenderWidget(ManagedRhiWidget, CameraController):
             if dat is None:
                 raise ValueError("Failed to load mesh data from bytes")
             self._mesh_renderer.mesh_data = ProcessedMeshData(dat)
+
+        self.focus_mesh()
