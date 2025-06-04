@@ -35,8 +35,7 @@ class PointRenderer:
         self._point_color = point_color
 
         self._points = []
-        self._points_vbuf_data: list[float] | None = []
-        self._points_ibuf_data: list[int] | None = []
+        self._new_points = []
 
         self._rhi: QtGui.QRhi | None = None
 
@@ -50,7 +49,20 @@ class PointRenderer:
         self._ibuf: QtGui.QRhiBuffer | None = None
         self._srb: QtGui.QRhiShaderResourceBindings | None = None
 
-        self._first_update = True
+    def _generate_quad_indices(self, point_count: int) -> list[int]:
+        """
+        Generate indices for quad rendering ahead of time.
+        Each point creates a quad with 2 triangles (6 indices).
+        """
+        indices = []
+        for i in range(point_count):
+            base_vertex = i * 4
+            # Triangle 1: 0,1,2  Triangle 2: 0,2,3 (counter-clockwise)
+            indices.extend([
+                base_vertex + 0, base_vertex + 1, base_vertex + 2,
+                base_vertex + 0, base_vertex + 2, base_vertex + 3
+            ])
+        return indices
 
     def _points_to_quads(self, points: list[tuple[int, int, int, int]], screen_width, screen_height):
         """
@@ -78,40 +90,7 @@ class PointRenderer:
                 vertices[idx, 3]       = size
                 vertices[idx, 4:6]     = offsets[j]
 
-        # Create indices for triangles (2 triangles per quad)
-        indices = np.zeros(num_points * 6, dtype=np.uint32)
-        for i in range(num_points):
-            base_vertex = i * 4
-            base_index = i * 6
-            # Triangle 1: 0,1,2  Triangle 2: 0,2,3 (counter-clockwise)
-            indices[base_index:base_index+6] = [
-                base_vertex + 0, base_vertex + 1, base_vertex + 2,
-                base_vertex + 0, base_vertex + 2, base_vertex + 3
-            ]
-
-        return vertices, indices
-
-    def _refresh_points_buf_data(self):
-        """
-        Refresh the vertex buffer data for points.
-        """
-        self._points_vbuf_data = []
-
-        if not self._points:
-            return
-
-        if self._rhi_widget.renderTarget() is None:
-            return
-
-        if self._is_d3d:
-            size = self._rhi_widget.renderTarget().pixelSize()
-            (width, height) = (size.width(), size.height())
-            vertices, indices = self._points_to_quads(self._points, width, height)
-            self._points_vbuf_data.extend(vertices.flatten().tolist())
-            self._points_ibuf_data = indices.tolist()
-        else:
-            for point in self._points:
-                self._points_vbuf_data.extend(point)
+        return vertices
 
     def add_points(self, points, point_size: float | None = None):
         """
@@ -120,22 +99,24 @@ class PointRenderer:
         :param points: A list of points, where each point is a tuple of (x, y, z).
         :param point_size: The size of the points.
         """
+
+        if self._new_points is None:
+            # No new points currently, and we (may) have existing points
+            self._new_points = []
+            self._new_points.extend(self._points)
+
         if point_size is None:
-            self._points.extend(points)
-            self._refresh_points_buf_data()
+            self._new_points.extend(points)
             return
 
         points_with_size = np.column_stack([points, np.full(len(points), point_size)])
-        self._points.extend(points_with_size.tolist())
-
-        self._refresh_points_buf_data()
+        self._new_points.extend(points_with_size.tolist())
 
     def clear_points(self):
         """
         Clear all points from the renderer.
         """
-        self._points.clear()
-        self._refresh_points_buf_data()
+        self._new_points = []
 
     def initialize(self, cb: QtGui.QRhiCommandBuffer,
                    mvp_ubuf: QtGui.QRhiBuffer):
@@ -175,19 +156,6 @@ class PointRenderer:
                                                          3 * ctypes.sizeof(ctypes.c_float)
                                                      )
             self._frag_ubuf.create()
-
-            self._vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
-                                             QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
-                                             (6 if self._is_d3d else 4) * 1024 * \
-                                                ctypes.sizeof(ctypes.c_float)
-                                             )
-            self._vbuf.create()
-
-            if self._is_d3d:
-                self._ibuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
-                                                QtGui.QRhiBuffer.UsageFlag.IndexBuffer,
-                                                6 * 1024 * ctypes.sizeof(ctypes.c_int))
-                self._ibuf.create()
 
             self._srb = self._rhi.newShaderResourceBindings()
             bindings = [
@@ -247,6 +215,9 @@ class PointRenderer:
 
         :param resource_updates: The resource update batch.
         """
+        if self._rhi is None:
+            return
+
         if self._is_d3d:
             if self._vert_ubuf is not None:
                 viewport = self._rhi_widget.renderTarget().pixelSize()
@@ -257,20 +228,41 @@ class PointRenderer:
                 arr = (ctypes.c_float * len(self._point_color))(*self._point_color)
                 resource_updates.updateDynamicBuffer(self._frag_ubuf, 0, ctypes.sizeof(arr), cast(int, arr))
 
-        if self._first_update:
-            self._refresh_points_buf_data()
-            self._first_update = False
+        if self._new_points:
+            point_count = len(self._new_points)
 
-        if self._vbuf is not None and self._points_vbuf_data is not None:
-            arr = (ctypes.c_float * len(self._points_vbuf_data))(*self._points_vbuf_data)
+            self._vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+                                             QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
+                                             (6 if self._is_d3d else 4) * point_count * \
+                                                ctypes.sizeof(ctypes.c_float)
+                                             )
+            self._vbuf.create()
+
+            if self._is_d3d:
+                self._ibuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
+                                                QtGui.QRhiBuffer.UsageFlag.IndexBuffer,
+                                                6 * point_count * ctypes.sizeof(ctypes.c_int))
+                self._ibuf.create()
+
+            vbuf_data = []
+            if self._is_d3d:
+                size = self._rhi_widget.renderTarget().pixelSize()
+                (width, height) = (size.width(), size.height())
+                vertices = self._points_to_quads(self._new_points, width, height)
+                vbuf_data.extend(vertices.flatten().tolist())
+            else:
+                for point in self._new_points:
+                    vbuf_data.extend(point)
+            arr = (ctypes.c_float * len(vbuf_data))(*vbuf_data)
             resource_updates.uploadStaticBuffer(self._vbuf, cast(int, arr))
-            self._points_vbuf_data = None
 
-        # Only used in D3D
-        if self._ibuf is not None and self._points_ibuf_data is not None:
-            arr = (ctypes.c_int * len(self._points_ibuf_data))(*self._points_ibuf_data)
-            resource_updates.uploadStaticBuffer(self._ibuf, cast(int, arr))
-            self._points_ibuf_data = None
+            if self._is_d3d:
+                indices = self._generate_quad_indices(point_count)
+                arr = (ctypes.c_int * len(indices))(*indices)
+                resource_updates.uploadStaticBuffer(cast(QtGui.QRhiBuffer, self._ibuf), cast(int, arr))
+
+            self._points = self._new_points
+            self._new_points = None
 
     def render(self, cb: QtGui.QRhiCommandBuffer):
         """
