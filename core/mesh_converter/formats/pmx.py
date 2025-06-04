@@ -1,5 +1,4 @@
 import io
-import math
 
 from pymeshio import pmx
 import pymeshio.pmx.writer
@@ -7,7 +6,10 @@ import pymeshio.common as common
 
 from core.mesh_loader.parsers import MeshData
 
-def convert(mesh: MeshData) -> bytes:
+NAME = "Polygon Model eXtended (PMX) Format"
+EXTENSION = ".pmx"
+
+def convert(mesh: MeshData, scale_factor = 100.0) -> bytes:
     """
     Convert mesh to PMX format.
     
@@ -38,12 +40,13 @@ def convert(mesh: MeshData) -> bytes:
 
         def build_joint(index, parent_index):
             matrix = mesh.bone_matrix[index]
-            # Extract translation from matrix
+            # Extract translation from matrix and scale for PMX
             x, y, z = matrix[0, 3], matrix[1, 3], matrix[2, 3]
+            scale_factor = 100.0  # Same scale factor as vertices
             bone_pool.append(pmx.Bone(
                 name=mesh.bone_name[index],
                 english_name=mesh.bone_name[index],
-                position=common.Vector3(math.ceil(-x), math.ceil(y), math.ceil(-z)),
+                position=common.Vector3(round(x * scale_factor), round(y * scale_factor), round(z * scale_factor)),
                 parent_index=parent_index,
                 layer=0,
                 flag=0
@@ -88,11 +91,18 @@ def convert(mesh: MeshData) -> bytes:
         pmx_model.bones = [root_bone]
         old2new = {0: 0}
 
-    # Add vertices
+    # Add vertices with scaling for PMX integer format
+    # PMX uses integer coordinates, so we need to scale up small meshes
+    
     for i, position in enumerate(mesh.position):
         x, y, z = position
         nx, ny, nz = mesh.normal[i] if mesh.has_normals else (0.0, 0.0, 1.0)
         u, v = mesh.uv[i] if mesh.has_uvs else (0.0, 0.0)
+
+        # Scale up position coordinates
+        scaled_x = round(x * scale_factor)
+        scaled_y = round(y * scale_factor)
+        scaled_z = round(z * scale_factor)
 
         if mesh.has_bones and i < len(mesh.vertex_bone):
             # Map old bone indices to new ones
@@ -114,18 +124,18 @@ def convert(mesh: MeshData) -> bytes:
             vertex_weights = vertex_weights[:4]
 
             vertex = pmx.Vertex(
-                common.Vector3(math.ceil(-x), math.ceil(y), math.ceil(-z)),
-                common.Vector3(math.ceil(-nx), math.ceil(ny), math.ceil(-nz)),
-                common.Vector2(math.ceil(u), math.ceil(v)),
+                common.Vector3(scaled_x, scaled_y, scaled_z),
+                common.Vector3(round(nx), round(ny), round(nz)),
+                common.Vector2(round(u * 1000), round(v * 1000)),  # Scale UV coordinates too
                 pmx.Bdef4(*vertex_joint_index, *vertex_weights),
                 0.0
             )
         else:
             # No bone data - assign to root bone
             vertex = pmx.Vertex(
-                common.Vector3(math.ceil(-x), math.ceil(y), math.ceil(-z)),
-                common.Vector3(math.ceil(-nx), math.ceil(ny), math.ceil(-nz)),
-                common.Vector2(math.ceil(u), math.ceil(v)),
+                common.Vector3(scaled_x, scaled_y, scaled_z),
+                common.Vector3(round(nx), round(ny), round(nz)),
+                common.Vector2(round(u * 1000), round(v * 1000)),  # Scale UV coordinates too
                 pmx.Bdef1(0),
                 0.0
             )

@@ -1,5 +1,8 @@
 from core.mesh_loader.parsers import MeshData
 
+NAME = "Source Model Data (SMD) Format"
+EXTENSION = ".smd"
+
 def convert(mesh: MeshData, flip_uv=False) -> bytes:
     """
     Convert mesh to Valve's SMD format as a reference (static) SMD.

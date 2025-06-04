@@ -1,5 +1,8 @@
 from core.mesh_loader.parsers import MeshData
 
+NAME = "Wavefront OBJ Format"
+EXTENSION = ".obj"
+
 def convert(mesh: MeshData, flip_uv=False) -> bytes:
     """
     Convert mesh to OBJ format as a static mesh without skeleton.

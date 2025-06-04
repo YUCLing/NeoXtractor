@@ -1,5 +1,8 @@
 from core.mesh_loader.parsers import MeshData
 
+NAME = "ASCII Mesh Format"
+EXTENSION = ".ascii"
+
 def convert(mesh: MeshData, flip_uv=False) -> bytes:
     """
     Convert mesh to ASCII format.

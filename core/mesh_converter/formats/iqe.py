@@ -2,6 +2,9 @@ import numpy as np
 
 from core.mesh_loader.parsers import MeshData
 
+NAME = "Inter-Quake Export (IQE) Format"
+EXTENSION = ".iqe"
+
 def convert(mesh: MeshData) -> bytes:
     """
     Convert mesh to IQE format.
