@@ -27,10 +27,10 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(self._viewer_name)
         self.setMinimumSize(800, 600)
 
-        widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
+        self.central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.central_widget)
 
-        layout = QtWidgets.QVBoxLayout(widget)
+        self.central_layout = QtWidgets.QVBoxLayout(self.central_widget)
 
         self.no_tab_label = QtWidgets.QLabel("No file opened.")
         self.no_tab_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -52,8 +52,8 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
         self.tab_widget.currentChanged.connect(
             lambda index: self.setWindowTitle(f"{self.tab_widget.tabText(index)} - {self._viewer_name}")
         )
-        layout.addWidget(self.no_tab_label)
-        layout.addWidget(self.tab_widget)
+        self.central_layout.addWidget(self.no_tab_label)
+        self.central_layout.addWidget(self.tab_widget)
 
         def file_menu() -> QtWidgets.QMenu:
             menu = QtWidgets.QMenu("File", self)
