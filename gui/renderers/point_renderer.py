@@ -233,7 +233,7 @@ class PointRenderer:
 
             self._vbuf = self._rhi.newBuffer(QtGui.QRhiBuffer.Type.Immutable,
                                              QtGui.QRhiBuffer.UsageFlag.VertexBuffer,
-                                             (6 if self._is_d3d else 4) * point_count * \
+                                             (4 * 6 if self._is_d3d else 4) * point_count * \
                                                 ctypes.sizeof(ctypes.c_float)
                                              )
             self._vbuf.create()
