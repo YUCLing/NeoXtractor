@@ -81,6 +81,18 @@ class ViewerTabWindow(QtWidgets.QMainWindow):
                         self.load_file(data, filename)
             open_file_action.triggered.connect(open_file_dialog)
 
+            close_all_action = menu.addAction("Close All")
+            close_all_action.setIcon(
+                self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DockWidgetCloseButton))
+            close_all_action.triggered.connect(
+                lambda: (
+                    self.tab_widget.clear(),
+                    self.setWindowTitle(self._viewer_name),
+                    self.tab_widget.setVisible(False),
+                    self.no_tab_label.setVisible(True)
+                )
+            )
+
             return menu
 
         self.menuBar().addMenu(file_menu())
