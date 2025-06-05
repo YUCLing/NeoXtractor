@@ -19,10 +19,10 @@ class ImageDecodeTaskSignals(QtCore.QObject):
 class ImageDecodeTask(QtCore.QRunnable):
     """A task to decode an image in a separate thread."""
 
-    signals = ImageDecodeTaskSignals()
-
     def __init__(self, data: bytes, extension: str):
         super().__init__()
+
+        self.signals = ImageDecodeTaskSignals()
 
         self.cancelled = False
 
