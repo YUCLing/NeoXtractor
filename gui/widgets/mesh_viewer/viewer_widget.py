@@ -3,7 +3,7 @@
 from PySide6 import QtWidgets, QtCore
 
 from gui.widgets.mesh_viewer.render_widget import MeshRenderWidget
-from gui.widgets.mesh_viewer.tab_window_ui import setup_mesh_viewer_tab_window
+from gui.widgets.tab_window_ui.mesh_viewer import setup_mesh_viewer_tab_window
 
 class MeshViewer(QtWidgets.QWidget):
     """

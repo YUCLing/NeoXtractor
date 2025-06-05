@@ -6,6 +6,7 @@ from PIL import Image, ImageFile
 import numpy as np
 
 from core.images import convert_image, image_to_png_data
+from gui.widgets.tab_window_ui.texture_viewer import setup_texture_viewer_tab_window
 
 QT_SUPPORTED_FORMATS = list(fmt.toStdString() for fmt in QtGui.QImageReader.supportedImageFormats())
 
@@ -55,6 +56,7 @@ class TextureViewer(QtWidgets.QWidget):
     name = "Texture Viewer"
     accepted_extensions = QT_SUPPORTED_FORMATS + ["tga", "ico",
                            "tiff", "dds", "pvr", "ktx", "astc", "cbk"]
+    setup_tab_window = setup_texture_viewer_tab_window
 
     def __init__(self):
         super().__init__()
@@ -176,6 +178,15 @@ class TextureViewer(QtWidgets.QWidget):
         self._processed_texture = image
 
         self._display_image()
+
+    @property
+    def texture(self) -> QtGui.QImage | None:
+        """Get the current texture."""
+        return self._texture
+    @property
+    def processed_texture(self) -> QtGui.QImage | None:
+        """Get the processed texture."""
+        return self._processed_texture
 
     def resizeEvent(self, event: QtGui.QResizeEvent):
         """Handle resize events."""
