@@ -36,9 +36,13 @@ class ImageDecodeTask(QtCore.QRunnable):
             texture = QtGui.QImage.fromData(self.data)
         else:
             # Use custom conversion for unsupported formats
-            texture = QtGui.QImage.fromData(image_to_png_data(
-                cast(Image.Image | ImageFile.ImageFile,convert_image(self.data, self.extension))
-                ))
+            try:
+                texture = QtGui.QImage.fromData(image_to_png_data(
+                    cast(Image.Image | ImageFile.ImageFile,convert_image(self.data, self.extension))
+                    ))
+            except Exception as e:
+                self.signals.load_failed.emit(str(e))
+                return
 
         if self.cancelled:
             return
