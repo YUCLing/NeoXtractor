@@ -150,22 +150,35 @@ class NPKFileList(QtWidgets.QListView):
         extract = menu.addAction("Extract")
         extract.triggered.connect(lambda: self.extract_entries(indexes))
 
+        menu.addSeparator()
+        for viewer in ALL_VIEWERS:
+            viewer_action = menu.addAction("Open in " + get_viewer_display_name(viewer))
+            viewer_action.triggered.connect(
+                lambda _checked, v=viewer: self.open_entries_with(indexes, v)
+            )
+
         if len(indexes) == 1:
-            menu.addSeparator()
-            index = indexes[0]
-            row = index.row()
-            entry = npk_file.read_entry(row)
-            for viewer in ALL_VIEWERS:
-                viewer_action = menu.addAction("Open in " + get_viewer_display_name(viewer))
-                viewer_action.triggered.connect(
-                    lambda _checked, v=viewer: self.open_entry_with.emit(row, entry, v)
-                )
             menu.addSeparator()
             rename = menu.addAction("Rename")
             rename.triggered.connect(lambda: self.show_rename_dialog(indexes[0]))
 
         # Show the context menu at the current position
         menu.exec(self.viewport().mapToGlobal(position))
+
+    def open_entries_with(self, indexes: list[QtCore.QModelIndex], viewer: type):
+        """
+        Open the selected entry with the specified viewer.
+        
+        :param indexes: List of model indexes for the selected entries.
+        :param viewer: The viewer class to use.
+        """
+        npk_file = get_npk_file()
+        if npk_file is None:
+            return
+        for index in indexes:
+            row = index.row()
+            entry = npk_file.read_entry(row)
+            self.open_entry_with.emit(row, entry, viewer)
 
     def extract_entries(self, indexes: list[QtCore.QModelIndex]):
         """
