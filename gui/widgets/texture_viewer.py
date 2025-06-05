@@ -188,6 +188,12 @@ class TextureViewer(QtWidgets.QWidget):
         """Get the processed texture."""
         return self._processed_texture
 
+    def showEvent(self, event: QtGui.QShowEvent):
+        """Handle show events."""
+        super().showEvent(event)
+        if self._texture is not None:
+            self._display_image()
+
     def resizeEvent(self, event: QtGui.QResizeEvent):
         """Handle resize events."""
         super().resizeEvent(event)
