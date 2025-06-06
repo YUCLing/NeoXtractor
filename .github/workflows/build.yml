@@ -70,8 +70,8 @@ jobs:
       - name: Create archive with symlinks (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: |
-          cd dist
-          tar -czf ${{ matrix.asset_name }}${{ inputs.asset_suffix }}.tar.gz main/
+          cd dist/main
+          tar -czf ../${{ matrix.asset_name }}${{ inputs.asset_suffix }}.tar.gz .
         
       - name: Upload artifact (Linux/macOS)
         if: matrix.os != 'windows-latest'
