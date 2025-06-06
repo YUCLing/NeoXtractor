@@ -6,6 +6,7 @@ from typing import Any, cast
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from core.config import Config
+from core.logger import get_logger
 from core.npk.enums import NPKEntryFileCategories, NPKFileType
 from core.npk.npk_file import NPKFile
 from core.npk.types import NPKEntry, NPKEntryDataFlags
@@ -18,7 +19,7 @@ from gui.utils.viewer import ALL_VIEWERS, find_best_viewer, get_viewer_display_n
 from gui.widgets.npk_file_list import NPKFileList
 from gui.widgets.preview_widget import PreviewWidget
 from gui.windows.about_window import AboutWindow
-from gui.windows.config_manager_window import ConfigManagerWindow
+from gui.windows.config_manager import ConfigManagerWindow
 from gui.windows.settings_window import SettingsWindow
 from gui.windows.viewer_tab_window import ViewerTabWindow
 
@@ -318,6 +319,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.list_widget.refresh_npk_file()
         self.extract_button_widget.setVisible(False)
         self.preview_widget.clear()
+        get_logger().info("NPK file unloaded.")
 
     def refresh_config_list(self):
         """Refresh the config list from the config manager."""
@@ -367,6 +369,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.unload_npk()
 
             self.app.setProperty("game_config", self.config)
+
+            get_logger().info("Config changed to: %s", self.config.name if self.config else "None")
 
     def load_npk(self, path: str):
         """Load an NPK file and populate the list widget."""
