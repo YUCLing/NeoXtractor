@@ -198,6 +198,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.open_file_action: QtGui.QAction
+        self.unload_npk_action: QtGui.QAction
 
         def file_menu() -> QtWidgets.QMenu:
             menu = QtWidgets.QMenu(title="File")
@@ -230,6 +231,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
             open_file.triggered.connect(open_file_dialog)
             self.open_file_action = open_file
+
+            unload_npk = QtGui.QAction(
+                self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DialogCancelButton),
+                "Unload NPK",
+                self
+            )
+            unload_npk.setStatusTip("Unload the current NPK file.")
+            unload_npk.setShortcut("Ctrl+W")
+            unload_npk.setEnabled(False)  # Initially disabled
+            unload_npk.triggered.connect(self.unload_npk)
+            menu.addAction(unload_npk)
+            self.unload_npk_action = unload_npk
 
             menu.addSeparator()
 
@@ -319,6 +332,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.list_widget.refresh_npk_file()
         self.extract_button_widget.setVisible(False)
         self.preview_widget.clear()
+        self.unload_npk_action.setEnabled(False)
         get_logger().info("NPK file unloaded.")
 
     def refresh_config_list(self):
@@ -448,6 +462,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(False)
         self.cancel_button.setVisible(False)
         self.extract_button_widget.setVisible(True)
+        self.unload_npk_action.setEnabled(True)
         if self._loading_cancelled:
             self.unload_npk()
         else:
