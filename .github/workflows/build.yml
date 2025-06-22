@@ -44,18 +44,6 @@ jobs:
         with:
           version: '0.7.4'
 
-      - name: Set compiler flags for apple-m1
-        if: matrix.os == 'macos-latest' && matrix.arch == 'arm64'
-        run: |
-          export CFLAGS="-march=armv8-a"
-          export CXXFLAGS="-march=armv8-a"
-
-      - name: Set compiler flags for apple-x64
-        if: matrix.os == 'macos-latest' && matrix.arch == 'x64'
-        run: |
-          export CFLAGS="-march=x86-64"
-          export CXXFLAGS="-march=x86-64"
-
       - name: Install dependencies
         shell: bash
         run: |
