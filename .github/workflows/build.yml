@@ -25,6 +25,7 @@ jobs:
           - os: macos-latest
             arch: x64
             asset_name: neoxtractor-macos-x64
+            pyi_args: '--target-arch x86_64'
           - os: macos-latest
             arch: arm64
             asset_name: neoxtractor-macos-arm64
@@ -53,7 +54,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          uv run pyinstaller main.spec
+          uv run pyinstaller main.spec ${{ matrix.pyi_args || '' }}
         
       - name: Create archive with symlinks (Linux/macOS)
         if: matrix.os != 'windows-latest'
