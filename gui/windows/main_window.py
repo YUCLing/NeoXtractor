@@ -253,6 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "Config Manager",
                 self
             )
+            config_manager.setMenuRole(QtGui.QAction.MenuRole.NoRole)
             config_manager.setStatusTip("Open the Config Manager.")
             config_manager.setShortcut("Ctrl+M")
 
@@ -272,6 +273,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         settings_action = self.menuBar().addAction("Settings")
         settings_action.setStatusTip("Open Settings window.")
+        settings_action.setMenuRole(QtGui.QAction.MenuRole.PreferencesRole)
         settings_action.triggered.connect(
             lambda: SettingsWindow(self.settings_manager, self).exec()
         )
@@ -291,7 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.menuBar().addAction("About",
             lambda: AboutWindow(self).exec()
-        )
+        ).setMenuRole(QtGui.QAction.MenuRole.AboutRole)
 
         self.refresh_config_list()
 
