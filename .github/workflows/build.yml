@@ -47,6 +47,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          export MACOSX_DEPLOYMENT_TARGET=11.0
           uv sync --locked
           uv pip install pyinstaller
 
