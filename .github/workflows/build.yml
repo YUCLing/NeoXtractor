@@ -49,7 +49,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           export MACOSX_DEPLOYMENT_TARGET=12.0
-          uv sync --python-platform macos --locked -v
+          uv sync --python-platform ${{ matrix.arch == 'x64' && 'x86_64-apple-darwin' || 'aarch64-apple-darwin' }} --locked -v
           uv pip install pyinstaller
       
       - name: Install dependencies (Linux/Windows)
