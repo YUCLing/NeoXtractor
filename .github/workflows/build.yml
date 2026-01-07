@@ -44,15 +44,22 @@ jobs:
         with:
           version: '0.9.22'
 
-      - name: Install dependencies
+      - name: Install dependencies (macOS)
         shell: bash
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          export MACOSX_DEPLOYMENT_TARGET=10.13
+          export MACOSX_DEPLOYMENT_TARGET=12.0
           uv sync --python-platform macos --locked -v
+          uv pip install pyinstaller
+      
+      - name: Install dependencies (Linux/Windows)
+        shell: bash
+        if: ${{ !startsWith(matrix.os, 'macos') }}
+        run: |
+          uv sync --locked
           uv pip install pyinstaller
 
       - name: Build with PyInstaller
-        shell: bash
         run: |
           uv run pyinstaller main.spec
         
