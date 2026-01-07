@@ -48,13 +48,12 @@ jobs:
         shell: bash
         run: |
           export MACOSX_DEPLOYMENT_TARGET=10.13
-          uv sync --locked -v
+          uv sync --locked --python-platform macos
           uv pip install pyinstaller
 
       - name: Build with PyInstaller
         shell: bash
         run: |
-          export MACOSX_DEPLOYMENT_TARGET=10.13
           uv run pyinstaller main.spec
         
       - name: Create archive with symlinks (Linux/macOS)
