@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           export MACOSX_DEPLOYMENT_TARGET=10.13
-          uv sync --locked -v
+          uv sync --python-platform macos --locked -v
           uv pip install pyinstaller
 
       - name: Build with PyInstaller
