@@ -47,14 +47,14 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          export MACOSX_DEPLOYMENT_TARGET=11.0
-          uv sync --locked
+          export MACOSX_DEPLOYMENT_TARGET=10.13
+          uv sync --locked -v
           uv pip install pyinstaller
 
       - name: Build with PyInstaller
         shell: bash
         run: |
-          export MACOSX_DEPLOYMENT_TARGET=11.0
+          export MACOSX_DEPLOYMENT_TARGET=10.13
           uv run pyinstaller main.spec
         
       - name: Create archive with symlinks (Linux/macOS)
